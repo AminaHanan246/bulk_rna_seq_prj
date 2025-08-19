@@ -55,3 +55,11 @@ dds <- DESeqDataSetFromMatrix(countData = raw_counts,
                               colData = my_colData,
                               design = ~condition)
 dds <- DESeq(dds)
+dds
+counts(dds, normalized = F) #raw counts
+normalized_counts <- counts(dds, normalized = T)
+head(normalized_counts)
+
+#==========================================
+#Ensmeble IDs to gene symbols using BioMArt
+#==========================================
