@@ -1,8 +1,2 @@
-grch38
-fastqc_results
-SRA_files
-fastq_files
-bam_files
-featurecounts
-grch38_genome.tar.gz
-Homo_sapiens.GRCh38.114.gtf
+data_analysis/
+data/
