@@ -3,7 +3,7 @@ import glob
 import pandas as pd
 import time
 
-path = "D:/SMau/bulkrnaseq_tutorial/fastq"
+path = "D:/SMau/bulkrnaseq_tutoriald:/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/data_analysis/fastq"
 files = glob.glob(os.path.join(path, "*.txt"))
 
 print("Files found:", files)
