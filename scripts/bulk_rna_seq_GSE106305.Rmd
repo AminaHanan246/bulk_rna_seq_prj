@@ -940,6 +940,10 @@ ggsave("results/hallmark_enrich_pc3.png",
        bg = "white",
        width = 10, height = 10, dpi = 300)
 ```
-
+```{r}
+sink("session_info.txt")
+sessionInfo()
+sink()
+```
 
 *THE END*
