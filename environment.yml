@@ -1,0 +1,11 @@
+name: preprocess
+channels:
+  - defaults
+dependencies:
+  - python=3.7
+  - trimmomatic
+  - fastqc
+  - hisat2
+  - subread
+  - notebook
+prefix: /home/hanaanmajeed/miniconda3/envs/preprocess
