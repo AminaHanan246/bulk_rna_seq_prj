@@ -1,4 +1,4 @@
-#Bulk RNA-Seq Analysis Project with GSEA
+# Bulk RNA-Seq Analysis Project with GSEA
 
 This repository contains a complete workflow for bulk RNA-seq analysis, from raw sequence data to differential gene expression and pathway enrichment analysis. The project demonstrates RNA-seq preprocessing, quality control, alignment, quantification, differential expression, and Gene Set Enrichment Analysis (GSEA) using R, Python, and standard bioinformatics tools.
 
