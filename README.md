@@ -19,7 +19,7 @@ The goal of this project is to analyze bulk RNA-seq data to identify differentia
 
 ---
 
-Technologies & Tools
+## Technologies & Tools
 
 * Languages: R, Python, Bash
 * Bioinformatics Tools: FastQC, MultiQC, Trimmomatic, HISAT2, featureCounts, DESeq2, GSEA
@@ -29,7 +29,7 @@ Technologies & Tools
 
 ---
 
-Folder Structure
+## Folder Structure
 
 bulk\_rna\_seq\_prj/
 |
@@ -41,7 +41,7 @@ bulk\_rna\_seq\_prj/
 
 ---
 
-Setup & Installation
+## Setup & Installation
 
 1. Clone the repository:
 
@@ -58,7 +58,7 @@ cd bulk_rna_seq_prj
 
 ---
 
-Usage
+## Usage
 
 1. Downloading SRA files:
 
@@ -90,7 +90,7 @@ Rscript scripts/bulk_rna_seq_GSE106305.Rmd
 
 ---
 
-Key Learnings
+## Key Learnings
 
 * Familiarity with NGS pipelines: QC, trimming, alignment, quantification, differential expression
 * Experience with GSEA for pathway and functional enrichment analysis
