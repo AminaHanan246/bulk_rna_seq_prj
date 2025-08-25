@@ -4,7 +4,7 @@ This repository contains a complete workflow for bulk RNA-seq analysis, from raw
 
 ---
 
-Project Overview
+## Project Overview
 
 The goal of this project is to analyze bulk RNA-seq data to identify differentially expressed genes (DEGs) and enriched biological pathways. The workflow includes:
 
