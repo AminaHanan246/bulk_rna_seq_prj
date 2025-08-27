@@ -187,10 +187,10 @@ The PC3 sample are associated with only one SRA file and is therefore renamed to
     mv SRR7179540_pass.fastq.gz PC3_Hypoxia_S1.fastq.gz
     mv SRR7179541_pass.fastq.gz PC3_Hypoxia_S2.fastq.gz
 ```
-###Mapping reads using HISAT2
+### Mapping reads using HISAT2
 The reads from FASTQ file are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA and number of times a read is mapped to specific gene indicates whether the gene expression was high or low.
 
-####Concept behind mapping
+#### Concept behind mapping
 To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts from cells are reverse transcribed into Cdna, fragmented and are attached with adapter sequences in both ends and this created the library. The sequencer reads the fragments and stores the sequence in FASTQ files. The FASTQ file consists of 4-line chunks as shown
 ```bash
     zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
@@ -199,10 +199,10 @@ To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts
 +SRR7179520.1.1 1 length=76
 AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
 ```
-*Line 1 :* Sequence identifier(starts with @)
-*Line 2 :* Read sequence
-*Line 3 :* Separator line(starts with +)
-*Line 4 :* Quality score of each base (based on ASCII)
+ *Line 1 :* Sequence identifier(starts with @)
+ *Line 2 :* Read sequence
+ *Line 3 :* Separator line(starts with +)
+ *Line 4 :* Quality score of each base (based on ASCII)
 
 
 
