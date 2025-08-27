@@ -20,7 +20,6 @@ The goal of this project is to analyze bulk RNA-seq data to identify differentia
 ---
 
 ## Folder Structure
-=======
 
 bulk\_rna\_seq\_prj/
 |
@@ -32,7 +31,7 @@ bulk\_rna\_seq\_prj/
 
 ---
 ## Setup & Installation
-=======
+
 **Programs required:** it is recommended that the user has anaconda installed, through which all required programs can be installed. Assuming that anaconda is available, all the required programs can be installed using the following:
 ```bash
 #Install the required programs using anaconda
@@ -60,7 +59,7 @@ conda activate preprocess
 ```
 ---
 ## Pre-processing Pipeline
-=======
+
 
 The dataset produced as part of the research [Guo et al. Nature Communications 2019](https://www.ncbi.nlm.nih.gov/pubmed/30655535). The raw sequencing data are obtained via Gene Expression Omnibus (GEO) using the accession number provided in the publication : GSE106305. The corresponding webpage contains information regarding the sequencing data for each sample in the study. 
 The objective was to find the differentially expressed under conditions: normoxia, normal oxygen condition of typically 21% O2, and hypoxia, low oxygen condition of typically 1-5% O2, for cell lines LNCAP and PC3. For this the control samples (Empty\_Vector for LNCaP and siCtrl for PC3) where selected. The samples to be downloaded and associated SRA accession number are in the table below:
