@@ -22,7 +22,7 @@ for sra_id in sra_numbers:
     print(f"⏱ Download time for {sra_id}: {elapsed_min:.2f} minutes")
 
 for sra_id in sra_numbers:
-    sra_path = f'"/mnt/d/SMau/bulkrnaseq_tutorial/{sra_id}/{sra_id}.sra"'
+    sra_path = f'"/mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/data_analysis/{sra_id}/{sra_id}.sra"'
     print("\n=== Generating FASTQ for:", sra_id, "===")
     fastq_dump_cmd = (
         f"fastq-dump --outdir fastq --gzip --skip-technical "
