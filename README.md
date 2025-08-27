@@ -61,7 +61,6 @@ conda activate preprocess
 ---
 ## Pre-processing Pipeline
 
-
 The dataset produced as part of the research [Guo et al. Nature Communications 2019](https://www.ncbi.nlm.nih.gov/pubmed/30655535). The raw sequencing data are obtained via Gene Expression Omnibus (GEO) using the accession number provided in the publication : GSE106305. The corresponding webpage contains information regarding the sequencing data for each sample in the study. 
 The objective was to find the differentially expressed under conditions: normoxia, normal oxygen condition of typically 21% O2, and hypoxia, low oxygen condition of typically 1-5% O2, for cell lines LNCAP and PC3. For this the control samples (Empty\_Vector for LNCaP and siCtrl for PC3) where selected. The samples to be downloaded and associated SRA accession number are in the table below:
 | Sample Name                                   | GSM Identifier | SRA Identifier (SRX) | SRA Runs (SRR, download these)                     |
@@ -74,7 +73,9 @@ The objective was to find the differentially expressed under conditions: normoxi
 | PC3\_RNA-Seq\_siCtrl\_Normoxia\_rep2          | GSM3145518     | SRX4096744           | SRR7179537                                         |
 | PC3\_RNA-Seq\_siCtrl\_Hypoxia\_rep1           | GSM3145521     | SRX4096747           | SRR7179540                                         |
 | PC3\_RNA-Seq\_siCtrl\_Hypoxia\_rep2           | GSM3145522     | SRX4096748           | SRR7179541                                         |
-### Download FASTQ files using SRA tools
+
+Download FASTQ files using SRA tools
+------------------------------------
 The sequencing data stored in NCBI database in the form SRA files, which can be downloaded using NCBI’s SRA toolkit. The `prefetch` command downloads the SRA files based on the specified SRA accession number. 
 ```bash
 prefetch SRR7179504
@@ -105,7 +106,7 @@ Written 13548432 spots for /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR
 `--read-filter pass`       : Filters out low-quality reads; keeps only those marked "pass"  
 `--dumpbase`               : Outputs base calls (A, T, G, C, N) instead of color space  
 `--split-3`                : Splits paired-end reads into separate files (`_1.fastq.gz`, `_2.fastq.gz`)  
-`--clip**                   : Removes adapter sequences from reads  
+`--clip`                   : Removes adapter sequences from reads  
 `~/sra/...`                : Path to the input SRA file  
 
 A compressed file `SRR7179504_pass.fastq.gz` is created in the subdirectory called `fastq`. 
@@ -151,7 +152,9 @@ for sra_id in sra_numbers:
     print(f"⏱ FASTQ generation time for {sra_id}: {elapsed_min:.2f} minutes")
 ```
 All the SRA files are now downloaded in subdirectory `fastq` wth path to sra file being `/SRR*/SRR*.sra`
-### Pre-alignment QC
+
+Pre-alignment QC
+----------------
 The raw sequence data is assessed for quality. FastQC reports are generated for samples to assess sequence quality, GC content, duplication rates, length distribution, K-mer content and adapter contamination with the results output to the subdirectory`/fastq_results` using the following command:
 ```bash
 fastqc fastq/*.fastq.gz -o fastqc_results/ --threads 8
@@ -161,14 +164,16 @@ The fastqc reports can be combined into one summary report using `Mulitqc` with 
 ```bash
 multiqc fastqc_results/ -o multiqc_report/
 ```
-### Trimming(optional)
+
+Trimming(optional)
+------------------
 Trimming is pre-alignment step to remove adapter sequences and low-quality bases. The step us done based on the fastqc report generated earlier which show the quality scores. The following command is used to trim SRR7079504:
 ```bash
 trimmomatic SE -threads 4 SRR7179504_pass.fastq.gz SRR7179504_trimmed.fastq.gz TRAILING:10 -phred33
 ```
 The quality of the read is checked again after the trimming.
 
-Since the reads had quality scores above 10 and adapter sequences removed during FASTQ file conversion, this step is optional (lenient filtering is done since the reads are used for quantification).
+Since the reads have short length and adapter sequences removed during FASTQ file conversion, this step is skipped as it may introduce biasness and poor alignment (lenient filtering is done since the reads are used for quantification).
 
 ### Concatenating FASTQ files to sample files
 The LNCAP samples are associated with four SRA files each and is concatenated into single FASTQ file using the command:
@@ -186,10 +191,11 @@ The PC3 sample are associated with only one SRA file and is therefore renamed to
     mv SRR7179540_pass.fastq.gz PC3_Hypoxia_S1.fastq.gz
     mv SRR7179541_pass.fastq.gz PC3_Hypoxia_S2.fastq.gz
 ```
-### Mapping reads using HISAT2
+Mapping reads using HISAT2
+---------------------------
 The reads from FASTQ file are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA and number of times a read is mapped to specific gene indicates whether the gene expression was high or low.
 
-#### Concept behind mapping
+### Concept behind mapping
 To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts from cells are reverse transcribed into Cdna, fragmented and are attached with adapter sequences in both ends and this created the library. The sequencer reads the fragments and stores the sequence in FASTQ files. The FASTQ file consists of 4-line chunks as shown
 ```bash
     zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
@@ -198,14 +204,15 @@ To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts
 +SRR7179520.1.1 1 length=76
 AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
 ```
- *Line 1 :* Sequence identifier(starts with @)
+ **Line 1 :** Sequence identifier(starts with @)
 
- *Line 2 :* Read sequence
+ **Line 2 :** Read sequence
 
- *Line 3 :* Separator line(starts with +)
+ **Line 3 :** Separator line(starts with +)
 
- *Line 4 :* Quality score of each base (based on ASCII)
+ **Line 4 :** Quality score of each base (based on ASCII)
 
-
+### Mapping reads
+The Genome index 
 
 
