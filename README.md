@@ -21,14 +21,12 @@ The goal of this project is to analyze bulk RNA-seq data to identify differentia
 
 ## Folder Structure
 
-bulk\_rna\_seq\_prj/
-|
-+-- data/               # Processed RNA-seq data and metadata
-+-- scripts/            # Analysis scripts (R, Python, Bash)
-+-- results/            # DE results, GSEA results, plots
-+-- README.txt          # Project documentation
-+-- environment.yml     # dependencies for reproducibility
-
+bulk_rna_seq_prj/
+├── data/               # Processed RNA-seq data and metadata
+├── scripts/            # Analysis scripts (R, Python, Bash)
+├── results/            # DE results, GSEA results, plots
+├── README.txt          # Project documentation
+└── environment.yml     # Dependencies for reproducibility
 ---
 ## Setup & Installation
 
@@ -43,6 +41,7 @@ conda install -n RNA-seq -c bioconda multiqc
 conda install -n preprocess -c hisat2
 conda install -n preprocess -c samtools
 ```
+
 The NCBI’s SRA toolkit is installed, and the path is added to /.bashrc configuration file:
 ```bash
 #Install SRA toolkit
@@ -53,6 +52,7 @@ nano ~/.bashrc
 export PATH="/home/amina/sratoolkit/bin:$PATH"
 source ~/.bashrc
 ```
+
 The conda environment needs to be activated before running the pipeline using command:
 ```bash
 conda activate preprocess
@@ -157,6 +157,7 @@ The raw sequence data is assessed for quality. FastQC reports are generated for 
 ```bash
 fastqc fastq/*.fastq.gz -o fastqc_results/ --threads 8
 ```
+
 The fastqc reports can be combined into one summary report using `Mulitqc` with the following command:
 ```bash
 multiqc fastqc_results/ -o multiqc_report/
@@ -170,5 +171,39 @@ The quality of the read is checked again after the trimming.
 
 Since the reads had quality scores above 10 and adapter sequences removed during FASTQ file conversion, this step is optional (lenient filtering is done since the reads are used for quantification).
 
-###
+### Concatenating FASTQ files to sample files
+The LNCAP samples are associated with four SRA files each and is concatenated into single FASTQ file using the command:
+```bash
+cat SRR7179504_pass.fastq.gz SRR7179505_pass.fastq.gz SRR7179506_pass.fastq.gz SRR7179507_pass.fastq.gz  > LNCAP_Normoxia_S1.fastq.gz
+cat SRR7179508_pass.fastq.gz SRR7179509_pass.fastq.gz SRR7179510_pass.fastq.gz SRR7179511_pass.fastq.gz  > LNCAP_Normoxia_S2.fastq.gz
+cat SRR7179520_pass.fastq.gz SRR7179521_pass.fastq.gz SRR7179522_pass.fastq.gz SRR7179523_pass.fastq.gz  > LNCAP_Hypoxia_S1.fastq.gz
+cat SRR7179524_pass.fastq.gz SRR7179525_pass.fastq.gz SRR7179526_pass.fastq.gz SRR7179527_pass.fastq.gz  > LNCAP_Hypoxia_S2.fastq.gz
+```
+
+The PC3 sample are associated with only one SRA file and is therefore renamed to the sample names using command:
+```bash
+    mv SRR7179536_pass.fastq.gz PC3_Normoxia_S1.fastq.gz
+    mv SRR7179537_pass.fastq.gz PC3_Normoxia_S2.fastq.gz
+    mv SRR7179540_pass.fastq.gz PC3_Hypoxia_S1.fastq.gz
+    mv SRR7179541_pass.fastq.gz PC3_Hypoxia_S2.fastq.gz
+```
+###Mapping reads using HISAT2
+The reads from FASTQ file are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA and number of times a read is mapped to specific gene indicates whether the gene expression was high or low.
+
+####Concept behind mapping
+To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts from cells are reverse transcribed into Cdna, fragmented and are attached with adapter sequences in both ends and this created the library. The sequencer reads the fragments and stores the sequence in FASTQ files. The FASTQ file consists of 4-line chunks as shown
+```bash
+    zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
+
+@SRR7179520.1.1 1 length=76    GTGAANATAGGCCTTAGAGCACTTGANGTGNTAGNGCANGTNGNNCCGGAACGNNNNNNNNAGGTNGNNNGNGTTG
++SRR7179520.1.1 1 length=76
+AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
+```
+*Line 1 :* Sequence identifier(starts with @)
+*Line 2 :* Read sequence
+*Line 3 :* Separator line(starts with +)
+*Line 4 :* Quality score of each base (based on ASCII)
+
+
+
 
