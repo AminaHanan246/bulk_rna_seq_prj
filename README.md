@@ -65,10 +65,10 @@ The dataset produced as part of the research [Guo et al. Nature Communications 2
 The objective was to find the differentially expressed under conditions: normoxia, normal oxygen condition of typically 21% O2, and hypoxia, low oxygen condition of typically 1-5% O2, for cell lines LNCAP and PC3. For this the control samples (Empty\_Vector for LNCaP and siCtrl for PC3) where selected. The samples to be downloaded and associated SRA accession number are in the table below:
 | Sample Name                                   | GSM Identifier | SRA Identifier (SRX) | SRA Runs (SRR, download these)                     |
 |-----------------------------------------------|----------------|----------------------|----------------------------------------------------|
-| LNCaP\_RNA-Seq\_Empty\_Vector\_Normoxia\_rep1 | GSM3145509     | SRX4096735           | SRR7179504, SRR7179505, SRR7179506, and SRR7179507 |
-| LNCaP\_RNA-Seq\_Empty\_Vector\_Normoxia\_rep2 | GSM3145510     | SRX4096736           | SRR7179508, SRR7179509, SRR7179510, and SRR7179511 |
-| LNCaP\_RNA-Seq\_Empty\_Vector\_Hypoxia\_rep1  | GSM3145513     | SRX4096739           | SRR7179520, SRR7179521, SRR7179522, and SRR7179523 |
-| LNCaP\_RNA-Seq\_Empty\_Vector\_Hypoxia\_rep2  | GSM3145514     | SRX4096740           | SRR7179524, SRR7179525, SRR7179526, and SRR7179527 |
+| LNCaP\_RNA-Seq\_Empty\_Vector\_Normoxia\_rep1 | GSM3145509     | SRX4096735           | SRR7179504  SRR7179505  SRR7179506  SRR7179507 |
+| LNCaP\_RNA-Seq\_Empty\_Vector\_Normoxia\_rep2 | GSM3145510     | SRX4096736           | SRR7179508  SRR7179509  SRR7179510  SRR7179511 |
+| LNCaP\_RNA-Seq\_Empty\_Vector\_Hypoxia\_rep1  | GSM3145513     | SRX4096739           | SRR7179520  SRR7179521  SRR7179522  SRR7179523 |
+| LNCaP\_RNA-Seq\_Empty\_Vector\_Hypoxia\_rep2  | GSM3145514     | SRX4096740           | SRR7179524  SRR7179525  SRR7179526  SRR7179527 |
 | PC3\_RNA-Seq\_siCtrl\_Normoxia\_rep1          | GSM3145517     | SRX4096743           | SRR7179536                                         |
 | PC3\_RNA-Seq\_siCtrl\_Normoxia\_rep2          | GSM3145518     | SRX4096744           | SRR7179537                                         |
 | PC3\_RNA-Seq\_siCtrl\_Hypoxia\_rep1           | GSM3145521     | SRX4096747           | SRR7179540                                         |
@@ -80,22 +80,35 @@ prefetch SRR7179504
 
 2025-08-27T05:28:06 prefetch.3.2.1: 1) Resolving 'SRR7179504'...
 2025-08-27T05:28:10 prefetch.3.2.1: Current preference is set to retrieve SRA Normalized Format files with full base quality scores
-2025-08-27T05:28:12 prefetch.3.2.1: 1) Downloading 'SRR7179504'...
-2025-08-27T05:28:12 prefetch.3.2.1:  SRA Normalized Format file is being retrieved
-2025-08-27T05:28:12 prefetch.3.2.1:  Downloading via HTTPS...
-2025-08-27T05:29:00 prefetch.3.2.1:  HTTPS download succeed
-2025-08-27T05:29:04 prefetch.3.2.1:  'SRR7179504' is valid: 439677804 bytes were streamed from 439667257
-2025-08-27T05:29:04 prefetch.3.2.1: 1) 'SRR7179504' was downloaded successfully
-2025-08-27T05:29:04 prefetch.3.2.1: 1) Resolving 'SRR7179504's dependencies...
-2025-08-27T05:29:04 prefetch.3.2.1: 'SRR7179504' has 0 unresolved dependencies
+2025-08-16T05:28:12 prefetch.3.2.1: 1) Downloading 'SRR7179504'...
+2025-08-16T05:28:12 prefetch.3.2.1:  SRA Normalized Format file is being retrieved
+2025-08-16T05:28:12 prefetch.3.2.1:  Downloading via HTTPS...
+2025-08-16T05:29:00 prefetch.3.2.1:  HTTPS download succeed
+2025-08-16T05:29:04 prefetch.3.2.1:  'SRR7179504' is valid: 439677804 bytes were streamed from 439667257
+2025-08-16T05:29:04 prefetch.3.2.1: 1) 'SRR7179504' was downloaded successfully
+2025-08-16T05:29:04 prefetch.3.2.1: 1) Resolving 'SRR7179504's dependencies...
+2025-08-16T05:29:04 prefetch.3.2.1: 'SRR7179504' has 0 unresolved dependencies
 ```
 The downloaded SRA file “SRR7019504” is then read into FASTQ file. For this the command `fastq-dump`:
 ```bash
 fastq-dump --outdir fastq --gzip --skip-technical  --readids --read-filter pass --dumpbase --split-3 --clip /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
+
 Rejected 13548432 READS because of filtering out non-biological READS
 Read 13548432 spots for /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
 Written 13548432 spots for /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
 ```
+Command                 | Purpose
+------------------------|---------------------------------------------------------------
+--outdir fastq          | Specifies the output directory for the FASTQ files
+--gzip                  | Compresses the output FASTQ files using gzip
+--skip-technical        | Skips technical reads (e.g., control reads or adapters)
+--readids               | Includes read identifiers in the FASTQ header
+--read-filter pass      | Filters out low-quality reads; keeps only those marked "pass"
+--dumpbase              | Outputs base calls (A, T, G, C, N) instead of color space
+--split-3               | Splits paired-end reads into separate files (_1.fastq.gz, _2.fastq.gz)
+--clip                  | Removes adapter sequences from reads
+~../sra/...             | Path to the input SRA file
+
 A compressed file `SRR7179504_pass.fastq.gz` is created in the subdirectory called `fastq`. 
 Since multiple SRA files are to be downloaded, a python script is written to automate the process. The code is provided in [`scripts/fastq_download.py`](scripts/fastq_download.py) and is as follows:
 ```python
@@ -149,67 +162,13 @@ The fastqc reports can be combined into one summary report using `Mulitqc` with 
 multiqc fastqc_results/ -o multiqc_report/
 ```
 ### Trimming(optional)
-Trimming is pre-alignment step to remove adapter sequences and low-quality bases. The step based on the fastqc report generated earlier which show the quality scores. The following command is used to trim SRR7079504:
+Trimming is pre-alignment step to remove adapter sequences and low-quality bases. The step us done based on the fastqc report generated earlier which show the quality scores. The following command is used to trim SRR7079504:
 ```bash
 trimmomatic SE -threads 4 SRR7179504_pass.fastq.gz SRR7179504_trimmed.fastq.gz TRAILING:10 -phred33
 ```
 The quality of the read is checked again after the trimming.
+
 Since the reads had quality scores above 10 and adapter sequences removed during FASTQ file conversion, this step is optional (lenient filtering is done since the reads are used for quantification).
 
->>>>>>> 35ed87f (Updating README and scripts)
+###
 
-1. Clone the repository:
-
-```
-git clone https://github.com/AminaHanan246/bulk_rna_seq_prj.git
-cd bulk_rna_seq_prj
-```
-
-2. Install dependencies:
-
-* R packages: DESeq2, ggplot2, pheatmap, clusterProfiler (for GSEA)
-* Python packages: pandas
-* Bioinformatics tools: FastQC, Trimmomatic, HISAT2, featureCounts
-
----
-
-## Usage
-
-1. Downloading SRA files:
-
-```
-python3 scripts/fastq_download.py
-```
-
-2. Trimming, file handling and HISAT2 alignment:
-
-```
-python3 scripts/hisat_align.py
-```
-
-3. Quantification of reads:
-
-```
-python3 scripts/feature_counts.py
-```
-
-3. Differential Expression Analysis & GSEA:
-
-```
-Rscript scripts/bulk_rna_seq_GSE106305.Rmd
-```
-
-5. Visualization:
-
-* PCA plots, heatmaps, volcano plots, and GSEA enrichment plots are saved in results/.
-
----
-
-## Key Learnings
-
-* Familiarity with NGS pipelines: QC, trimming, alignment, quantification, differential expression
-* Experience with GSEA for pathway and functional enrichment analysis
-* Hands-on experience with R for statistical analysis and visualization
-* Ability to handle real RNA-seq datasets and interpret biological meaning
-
----
