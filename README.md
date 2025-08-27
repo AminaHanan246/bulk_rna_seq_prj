@@ -200,8 +200,11 @@ To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts
 AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
 ```
  *Line 1 :* Sequence identifier(starts with @)
+
  *Line 2 :* Read sequence
+
  *Line 3 :* Separator line(starts with +)
+
  *Line 4 :* Quality score of each base (based on ASCII)
 
 
