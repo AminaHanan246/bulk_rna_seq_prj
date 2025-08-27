@@ -98,15 +98,15 @@ Rejected 13548432 READS because of filtering out non-biological READS
 Read 13548432 spots for /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
 Written 13548432 spots for /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
 ```
---outdir fastq           Specifies the output directory for the FASTQ files
---gzip                   Compresses the output FASTQ files using gzip
---skip-technical         Skips technical reads (e.g., control reads or adapters)
---readids                Includes read identifiers in the FASTQ header
---read-filter pass       Filters out low-quality reads; keeps only those marked "pass"
---dumpbase               Outputs base calls (A, T, G, C, N) instead of color space
---split-3                Splits paired-end reads into separate files (_1.fastq.gz, _2.fastq.gz)
---clip                   Removes adapter sequences from reads
-~../sra/...              Path to the input SRA file
+`--outdir fastq`           : Specifies the output directory for the FASTQ files  
+`--gzip`                   : Compresses the output FASTQ files using gzip  
+`--skip-technical`         : Skips technical reads (e.g., control reads or adapters)  
+`--readids`                : Includes read identifiers in the FASTQ header  
+`--read-filter pass`       : Filters out low-quality reads; keeps only those marked "pass"  
+`--dumpbase`               : Outputs base calls (A, T, G, C, N) instead of color space  
+`--split-3`                : Splits paired-end reads into separate files (`_1.fastq.gz`, `_2.fastq.gz`)  
+`--clip**                   : Removes adapter sequences from reads  
+`~/sra/...`                : Path to the input SRA file  
 
 A compressed file `SRR7179504_pass.fastq.gz` is created in the subdirectory called `fastq`. 
 Since multiple SRA files are to be downloaded, a python script is written to automate the process. The code is provided in [`scripts/fastq_download.py`](scripts/fastq_download.py) and is as follows:
