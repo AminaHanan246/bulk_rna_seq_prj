@@ -167,7 +167,7 @@ multiqc fastqc_results/ -o multiqc_report/
 
 Trimming(optional)
 ------------------
-Trimming is pre-alignment step to remove adapter sequences and low-quality bases. The step us done based on the fastqc report generated earlier which show the quality scores. The following command is used to trim SRR7079504:
+Trimming is pre-alignment step to remove adapter sequences and low-quality bases. The step us done based on the FASTqc report generated earlier which show the quality scores. The following command is used to trim SRR7079504:
 ```bash
 trimmomatic SE -threads 4 SRR7179504_pass.fastq.gz SRR7179504_trimmed.fastq.gz TRAILING:10 -phred33
 ```
@@ -196,11 +196,12 @@ Mapping reads using HISAT2
 The reads from FASTQ file are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA and number of times a read is mapped to specific gene indicates whether the gene expression was high or low.
 
 ### Concept behind mapping
-To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts from cells are reverse transcribed into Cdna, fragmented and are attached with adapter sequences in both ends and this created the library. The sequencer reads the fragments and stores the sequence in FASTQ files. The FASTQ file consists of 4-line chunks as shown
+To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts from cells are reverse transcribed into cDNA, fragmented and are attached with adapter sequences in both ends and this created the library. The sequencer reads the fragments and stores the sequence in FASTQ files. The FASTQ file consists of 4-line chunks as shown
 ```bash
     zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
 
-@SRR7179520.1.1 1 length=76    GTGAANATAGGCCTTAGAGCACTTGANGTGNTAGNGCANGTNGNNCCGGAACGNNNNNNNNAGGTNGNNNGNGTTG
+@SRR7179520.1.1 1 length=76    
+GTGAANATAGGCCTTAGAGCACTTGANGTGNTAGNGCANGTNGNNCCGGAACGNNNNNNNNAGGTNGNNNGNGTTG
 +SRR7179520.1.1 1 length=76
 AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
 ```
@@ -213,6 +214,78 @@ AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
  **Line 4 :** Quality score of each base (based on ASCII)
 
 ### Mapping reads
-The Genome index 
+The pre-built genome index, requiered for mapping, is downloaded using the `wget` command and is extracted using `tar -xvzf` command:
+```bash
+wget https://genome-idx.s3.amazonaws.com/hisat/grch38_genome.tar.gz
+
+tar -xvzf grch38_genome.tar.gz
+```
+The reads from FASTQ files are aligned to genome index using HISAT2 for the LNCAP_Normoxia_S1:
+```bash
+hisat2 -p 8 -x GRCh38_index -U LNCAP_Normoxia_S1_R1_001.fastq.gz -S LNCAP_Normoxia_S1.sam
+```
+The output BAM file consists of 11 fields for alignment information: 
+```bash
+samtools view LNCAP_Normoxia_S2.bam | head -n 1
+
+SRR7179504.1361607.1    272     1       14277   0       76M     *0       0       GAAACAGGGCCGCGGGGAGCGGCTGCCCCCACTGCCTAGGGACCAACAGGGGCAGGAGGCAGTCACTGACCCCGAG     //</EEEE/E//</6//EEE//E/AEEEE<//AEEEAAEEEEEEE<AEEEEEAEEEEEEEEE6EEEEEEEEAAAAA     AS:i:-15        ZS:i:-15 XN:i:0  XM:i:5  XO:i:0  XG:i:0  NM:i:5  MD:Z:8T1A2T6T0T54YT:Z:UU NH:i:3
+```
+1. QNAME -Read name
+2. FLAG - bitwise flag
+3. RNAME - Chromosome (if read is not aligned '*')
+4. POS - 1-based left-most mapping position
+5. MAPQ - Mapping quality
+6. CIGAR - describes the position of instertion(I),deletion(D) and matches(M) in alignment
+7. RNEXT - name of the pair sequence (in pair-ended sequences) - * unpaired
+8. PNEXT - position of pair 
+9. TLEN - Total span (size of pair reads and distance between them)
+10. SEQ - Read Sequence
+11. QUAL - Phred quality
+and TAG - TAG information (AS - alignment score, NH - number of reported alignments 
+
+Sorting and Indexing BAM Files using SAMtool
+--------------------------------------------
+After alignment, the bam files created are unsorted. The samtools sort and index the BAM file based on genomic coordinates, which is essential for downstream analysis. The aims is to achieve fast retrieval of alignments mapped to regions without going through the whole alignments. The file is sorted based on:
+1. Chromosome name
+2. Start position 
+
+Since multiple files are needed to be aligned to genome index, sorted and indexed using samtool, the process is automated using python script. The code is provided in [`scripts/hisat_align.py`](scripts/hisat_align.py):
+
+```python
+files = [
+    "LNCAP_Normoxia_S1.fastq.gz",
+    "LNCAP_Normoxia_S2.fastq.gz",
+    "LNCAP_Hypoxia_S1.fastq.gz",
+    "LNCAP_Hypoxia_S2.fastq.gz",
+    "PC3_Normoxia_S1.fastq.gz",
+    "PC3_Normoxia_S2.fastq.gz"
+]
+
+logfile = "alignment_log.txt"
+
+for file in files:
+    sample_name = os.path.basename(file).replace(".fastq.gz", "")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_entry = f"{timestamp} - Processing {sample_name}\n"
+    with open(logfile, "a") as log:
+        log.write(log_entry)
+    
+    start_time = time.time()
+
+    hisat2_exec = (
+        f"hisat2 -x grch38_genome -U fastq/{file} | "
+        f"samtools sort -o {file}.bam && "
+        f"samtools index {file}.bam"
+    )
+    subprocess.run(hisat2_exec, shell=True)
+
+    end_time = time.time()
+    duration = end_time - start_time
+    log_entry = f"{timestamp} - Finished processing {sample_name} in {duration:.2f} seconds\n"
+    with open(logfile, "a") as log:
+        log.write(log_entry)
+    print(f"Processed {sample_name} in {duration:.2f} seconds")
 
 
+print("All commands executed successfully")
+```
