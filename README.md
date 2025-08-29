@@ -10,12 +10,13 @@ The goal of this project is to analyze bulk RNA-seq data to identify differentia
 
 1. Data Acquisition: Download raw RNA-seq data (SRA format) and convert to FASTQ.
 2. Quality Control: Assess read quality using FastQC and MultiQC.
-3. Preprocessing: (Optional) trimming of adapters and low-quality reads using Trimmomatic.
+3. Pre-processing: (Optional) trimming of adapters and low-quality reads using Trimmomatic.
 4. Alignment: Map reads to reference genome using HISAT2 to human reference genome GRCh38_p14 .
-5. Quantification: Count reads per gene using featureCounts.
-6. Differential Expression Analysis: Perform DE analysis with DESeq2.
-7. Gene Set Enrichment Analysis (GSEA): Identify enriched pathways from DE genes.
-8. Visualization: Generate PCA plots, heatmaps, volcano plots, and GSEA enrichment plots.
+5. Sorting and indexing using SAMtools 
+6. Quantification: Count reads per gene using featureCounts.
+7. Differential Expression Analysis: Perform DE analysis with DESeq2.
+8. Gene Set Enrichment Analysis (GSEA): Identify enriched pathways from DE genes.
+9. Visualization: Generate PCA plots, heatmaps, volcano plots, and GSEA enrichment plots.
 
 ---
 
@@ -186,11 +187,12 @@ cat SRR7179524_pass.fastq.gz SRR7179525_pass.fastq.gz SRR7179526_pass.fastq.gz S
 
 The PC3 sample are associated with only one SRA file and is therefore renamed to the sample names using command:
 ```bash
-    mv SRR7179536_pass.fastq.gz PC3_Normoxia_S1.fastq.gz
-    mv SRR7179537_pass.fastq.gz PC3_Normoxia_S2.fastq.gz
-    mv SRR7179540_pass.fastq.gz PC3_Hypoxia_S1.fastq.gz
-    mv SRR7179541_pass.fastq.gz PC3_Hypoxia_S2.fastq.gz
+mv SRR7179536_pass.fastq.gz PC3_Normoxia_S1.fastq.gz
+mv SRR7179537_pass.fastq.gz PC3_Normoxia_S2.fastq.gz
+mv SRR7179540_pass.fastq.gz PC3_Hypoxia_S1.fastq.gz
+mv SRR7179541_pass.fastq.gz PC3_Hypoxia_S2.fastq.gz
 ```
+
 Mapping reads using HISAT2
 ---------------------------
 The reads from FASTQ file are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA and number of times a read is mapped to specific gene indicates whether the gene expression was high or low.
@@ -198,7 +200,7 @@ The reads from FASTQ file are aligned to a reference genome, where the reads are
 ### Concept behind mapping
 To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts from cells are reverse transcribed into cDNA, fragmented and are attached with adapter sequences in both ends and this created the library. The sequencer reads the fragments and stores the sequence in FASTQ files. The FASTQ file consists of 4-line chunks as shown
 ```bash
-    zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
+zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
 
 @SRR7179520.1.1 1 length=76    
 GTGAANATAGGCCTTAGAGCACTTGANGTGNTAGNGCANGTNGNNCCGGAACGNNNNNNNNAGGTNGNNNGNGTTG
@@ -214,16 +216,18 @@ AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
  **Line 4 :** Quality score of each base (based on ASCII)
 
 ### Mapping reads
-The pre-built genome index, requiered for mapping, is downloaded using the `wget` command and is extracted using `tar -xvzf` command:
+The pre-built genome index, required for mapping, is downloaded using the `wget` command and is extracted using `tar -xvzf` command:
 ```bash
 wget https://genome-idx.s3.amazonaws.com/hisat/grch38_genome.tar.gz
 
 tar -xvzf grch38_genome.tar.gz
 ```
-The reads from FASTQ files are aligned to genome index using HISAT2 for the LNCAP_Normoxia_S1:
+The reads from FASTQ files are aligned to genome index using HISAT2, which does splice-aware alignment for the LNCAP_Normoxia_S1:
 ```bash
 hisat2 -p 8 -x GRCh38_index -U LNCAP_Normoxia_S1_R1_001.fastq.gz -S LNCAP_Normoxia_S1.sam
 ```
+**_NOTE:_** STAR aligner provide more accurate and sensitive mapping, but HISAT2 is used here as it uses less memory 
+
 The output BAM file consists of 11 fields for alignment information: 
 ```bash
 samtools view LNCAP_Normoxia_S2.bam | head -n 1
@@ -289,3 +293,6 @@ for file in files:
 
 print("All commands executed successfully")
 ```
+
+Quantifying reads using featureCounts
+-------------------------------------
