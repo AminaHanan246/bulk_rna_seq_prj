@@ -226,7 +226,7 @@ The reads from FASTQ files are aligned to genome index using HISAT2, which does 
 ```bash
 hisat2 -p 8 -x GRCh38_index -U LNCAP_Normoxia_S1_R1_001.fastq.gz -S LNCAP_Normoxia_S1.sam
 ```
-**_NOTE:_** STAR aligner provide more accurate and sensitive mapping, but HISAT2 is used here as it uses less memory 
+> **_NOTE:_** STAR aligner provide more accurate and sensitive mapping, but HISAT2 is used here as it uses less memory 
 
 The output BAM file consists of 11 fields for alignment information: 
 ```bash
