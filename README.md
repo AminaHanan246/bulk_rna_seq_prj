@@ -39,9 +39,10 @@ conda create -n preprocess python=3.7
 
 conda install -n preprocess -c bioconda fastqc
 conda install -n preprocess -c trimmomatic
-conda install -n RNA-seq -c bioconda multiqc
+conda install -n preprocess -c bioconda multiqc
 conda install -n preprocess -c hisat2
 conda install -n preprocess -c samtools
+conda install -n preprocess -c subread
 ```
 
 The NCBI’s SRA toolkit is installed, and the path is added to the /.bashrc configuration file:
@@ -223,6 +224,11 @@ The reads from FASTQ files are aligned to genome index using HISAT2, which does 
 ```bash
 hisat2 -p 8 -x GRCh38_index -U LNCAP_Normoxia_S1_R1_001.fastq.gz -S LNCAP_Normoxia_S1.sam
 ```
+ ` -p ` : Number of threads to be used
+ ` -x ` : Genome index to be used
+ ` -U ` : Unpaired-reads to be aligned
+ ` -S ` : Write file to SAM alignment
+
 > [!NOTE] 
 > STAR aligner provides more accurate and sensitive mapping; however, HISAT2 is used here because it uses less memory and is significantly faster
 
@@ -241,8 +247,8 @@ SRR7179504.1361607.1    272     1       14277   0       76M     *0       0      
  7. RNEXT - name of the pair sequence (in pair-ended sequences) - * unpaired
  8. PNEXT - position of pair 
  9. TLEN - Total span (size of pair reads and distance between them)
- 10. SEQ - Read Sequence
- 11. QUAL - Phred quality
+  10. SEQ - Read Sequence
+  11. QUAL - Phred quality
  and TAG - TAG information (AS - alignment score, NH - number of reported alignments 
 
 Sorting and Indexing BAM Files using SAMtool
@@ -291,7 +297,7 @@ for file in files:
 print("All commands executed successfully")
 ```
 
-Quantifying reads using FeatureCounts
+Read summarisation using FeatureCounts
 -------------------------------------
 The reads are quantified using FeatureCounts, which uses genomic coordinates in BAM files and maps to genomic features based on annotation in the reference genome.
 ```bash
@@ -299,6 +305,55 @@ featureCounts -s 0 -a ../fastq/Homo_sapiens.GRCh38.114.gtf \
         -o ../fastq/{bam}_featurecounts.txt \
         {bam}"
 ```
-` -s ` : Indicate if strand-specific read counting should be performed.
-` -a ` : The annotation file to be used
-` -o ` : Name of the output directory
+ ` -s ` : Indicate if strand-specific read counting should be performed.        
+ ` -a ` : The annotation file to be used                 
+ ` -o ` : Name of the output directory          
+ `{bam}`: Name of the BAM file to be used
+
+The featureCounts output includes a count table, that contains read count for genome features, and summary of counting results
+The count table includes annotation columns: Geneid, Chr, Start, End, Strand, and Length, and reads counts for each genes. The count summary includes number of alignments that were successful and also number of assignment that failed.
+
+Since multiple files needs to be quantified, the following python script [`scripts/feature_counts.py`](scripts/feature_counts.py) is used:
+```python
+bam_files = [
+    "LNCAP_Normoxia_S1.bam",
+    "LNCAP_Normoxia_S2.bam",
+    "LNCAP_Hypoxia_S1.bam",
+    "LNCAP_Hypoxia_S2.bam",
+    "PC3_Normoxia_S1.bam",
+    "PC3_Normoxia_S2.bam",
+    "PC3_Hypoxia_S1.bam",
+    "PC3_Hypoxia_S2.bam"
+]
+
+# Loop over all BAM files
+for bam in bam_files:
+    start=time.time()  # start time
+
+    print(f"{start} Processing {bam} ...")
+    featurecounts = f"featureCounts -s 0 -a ../fastq/Homo_sapiens.GRCh38.114.gtf \
+        -o ../fastq/{bam}_featurecounts.txt \
+        {bam}"
+    subprocess.run(featurecounts, shell=True)
+
+    end=time.time()  # end time
+    runtime=(( (end - start) / 60 ))  # in minutes
+
+    print(f"✅ Completed {bam} in {runtime} minutes.")
+```
+After generating count tables and count summary for all the samples, the read counts for samples are merged using [`scripts/generating_countsmatrix.ipynb`](scripts/generating_countsmatrix.ipynb) into one dataset [`data/GSE106305_counts_matrix.csv`](data/GSE106305_counts_matrix.csv) 
+
+---
+## Downstream analysis
+
+Loading count data and meta data
+--------------------------------
+
+
+
+
+
+
+
+
+https://bioconductor.org/packages/devel/bioc/vignettes/Rsubread/inst/doc/SubreadUsersGuide.pdf             
