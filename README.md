@@ -32,7 +32,7 @@ bulk_rna_seq_prj/
 ---
 ## Setup & Installation
 
-**Programs required:** it is recommended that the user has anaconda installed, through which all required programs can be installed. Assuming that anaconda is available, all the required programs can be installed using the following:
+**Programs required:** It is recommended that the user have Anaconda installed, through which all required programs can be installed. Assuming that Anaconda is available, all the required programs can be installed using the following:
 ```bash
 #Install the required programs using anaconda
 conda create -n preprocess python=3.7
@@ -44,7 +44,7 @@ conda install -n preprocess -c hisat2
 conda install -n preprocess -c samtools
 ```
 
-The NCBI’s SRA toolkit is installed, and the path is added to /.bashrc configuration file:
+The NCBI’s SRA toolkit is installed, and the path is added to the /.bashrc configuration file:
 ```bash
 #Install SRA toolkit
 sudo apt install sra-toolkit
@@ -62,8 +62,8 @@ conda activate preprocess
 ---
 ## Pre-processing Pipeline
 
-The dataset produced as part of the research [Guo et al. Nature Communications 2019](https://www.ncbi.nlm.nih.gov/pubmed/30655535). The raw sequencing data are obtained via Gene Expression Omnibus (GEO) using the accession number provided in the publication : GSE106305. The corresponding webpage contains information regarding the sequencing data for each sample in the study. 
-The objective was to find the differentially expressed under conditions: normoxia, normal oxygen condition of typically 21% O2, and hypoxia, low oxygen condition of typically 1-5% O2, for cell lines LNCAP and PC3. For this the control samples (Empty\_Vector for LNCaP and siCtrl for PC3) where selected. The samples to be downloaded and associated SRA accession number are in the table below:
+The dataset was produced as part of the research [Guo et al., Nature Communications 2019](https://www.ncbi.nlm.nih.gov/pubmed/30655535). The raw sequencing data are obtained via Gene Expression Omnibus (GEO) using the accession number provided in the publication: GSE106305. The corresponding webpage contains information regarding the sequencing data for each sample in the study. 
+The objective was to find the differentially expressed under conditions of normoxia, normal oxygen condition of typically 21% O2, and hypoxia, low oxygen condition of typically 1-5% O2, for cell lines LNCAP and PC3. For this, the control samples (Empty\_Vector for LNCaP and siCtrl for PC3) were selected. The samples to be downloaded and associated SRA accession numbers are in the table below:
 | Sample Name                                   | GSM Identifier | SRA Identifier (SRX) | SRA Runs (SRR, download these)                     |
 |-----------------------------------------------|----------------|----------------------|----------------------------------------------------|
 | LNCaP\_RNA-Seq\_Empty\_Vector\_Normoxia\_rep1 | GSM3145509     | SRX4096735           | SRR7179504  SRR7179505  SRR7179506  SRR7179507 |
@@ -77,7 +77,7 @@ The objective was to find the differentially expressed under conditions: normoxi
 
 Download FASTQ files using SRA tools
 ------------------------------------
-The sequencing data stored in NCBI database in the form SRA files, which can be downloaded using NCBI’s SRA toolkit. The `prefetch` command downloads the SRA files based on the specified SRA accession number. 
+The sequencing data is stored in the NCBI database in the form of SRA files, which can be downloaded using NCBI’s SRA toolkit. The `prefetch` command downloads the SRA files based on the specified SRA accession number. 
 ```bash
 prefetch SRR7179504
 
@@ -137,7 +137,7 @@ for sra_id in sra_numbers:
     print(f"⏱ Download time for {sra_id}: {elapsed_min:.2f} minutes")
 
 for sra_id in sra_numbers:
-    sra_path = f'"/mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/data_analysis/{sra_id}/{sra_id}.sra"'
+    sra_path = f'"../{sra_id}/{sra_id}.sra"'
     print("\n=== Generating FASTQ for:", sra_id, "===")
     fastq_dump_cmd = (
         f"fastq-dump --outdir fastq --gzip --skip-technical "
@@ -156,7 +156,7 @@ All the SRA files are now downloaded in subdirectory `fastq` wth path to sra fil
 
 Pre-alignment QC
 ----------------
-The raw sequence data is assessed for quality. FastQC reports are generated for samples to assess sequence quality, GC content, duplication rates, length distribution, K-mer content and adapter contamination with the results output to the subdirectory`/fastq_results` using the following command:
+The raw sequence data is assessed for quality. The following command is used to generate FastQC reports for samples in order to evaluate sequence quality, GC content, duplication rates, length distribution, K-mer content, and adapter contamination. The results are then recorded in the subdirectory "/fastq_results."
 ```bash
 fastqc fastq/*.fastq.gz -o fastqc_results/ --threads 8
 ```
@@ -172,7 +172,7 @@ Trimming is pre-alignment step to remove adapter sequences and low-quality bases
 ```bash
 trimmomatic SE -threads 4 SRR7179504_pass.fastq.gz SRR7179504_trimmed.fastq.gz TRAILING:10 -phred33
 ```
-The quality of the read is checked again after the trimming.
+After the trimming process, the quality of the read is once again assessed.
 
 Since the reads have short length and adapter sequences removed during FASTQ file conversion, this step is skipped as it may introduce biasness and poor alignment (lenient filtering is done since the reads are used for quantification).
 
@@ -195,10 +195,10 @@ mv SRR7179541_pass.fastq.gz PC3_Hypoxia_S2.fastq.gz
 
 Mapping reads using HISAT2
 ---------------------------
-The reads from FASTQ file are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA and number of times a read is mapped to specific gene indicates whether the gene expression was high or low.
+The reads from FASTQ file are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA, and the number of times a read is mapped to a specific gene indicates whether the gene expression was high or low.
 
 ### Concept behind mapping
-To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts from cells are reverse transcribed into cDNA, fragmented and are attached with adapter sequences in both ends and this created the library. The sequencer reads the fragments and stores the sequence in FASTQ files. The FASTQ file consists of 4-line chunks as shown
+To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts from cells are reverse transcribed into cDNA, fragmented and are attached with adapter sequences in both ends and this created the library. The sequencer reads the fragments and stores the sequence in FASTQ files. The FASTQ file consists of 4-line chunks, as shown
 ```bash
 zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
 
@@ -207,13 +207,10 @@ GTGAANATAGGCCTTAGAGCACTTGANGTGNTAGNGCANGTNGNNCCGGAACGNNNNNNNNAGGTNGNNNGNGTTG
 +SRR7179520.1.1 1 length=76
 AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
 ```
- **Line 1 :** Sequence identifier(starts with @)
-
- **Line 2 :** Read sequence
-
- **Line 3 :** Separator line(starts with +)
-
- **Line 4 :** Quality score of each base (based on ASCII)
+ 1. Sequence identifier(starts with @)
+ 2. Read sequence
+ 3. Separator line(starts with +)
+ 4. Quality score of each base (based on ASCII)
 
 ### Mapping reads
 The pre-built genome index, required for mapping, is downloaded using the `wget` command and is extracted using `tar -xvzf` command:
@@ -226,7 +223,8 @@ The reads from FASTQ files are aligned to genome index using HISAT2, which does 
 ```bash
 hisat2 -p 8 -x GRCh38_index -U LNCAP_Normoxia_S1_R1_001.fastq.gz -S LNCAP_Normoxia_S1.sam
 ```
-> **_NOTE:_** STAR aligner provide more accurate and sensitive mapping, but HISAT2 is used here as it uses less memory 
+> [!NOTE] 
+> STAR aligner provides more accurate and sensitive mapping; however, HISAT2 is used here because it uses less memory and is significantly faster
 
 The output BAM file consists of 11 fields for alignment information: 
 ```bash
@@ -234,27 +232,26 @@ samtools view LNCAP_Normoxia_S2.bam | head -n 1
 
 SRR7179504.1361607.1    272     1       14277   0       76M     *0       0       GAAACAGGGCCGCGGGGAGCGGCTGCCCCCACTGCCTAGGGACCAACAGGGGCAGGAGGCAGTCACTGACCCCGAG     //</EEEE/E//</6//EEE//E/AEEEE<//AEEEAAEEEEEEE<AEEEEEAEEEEEEEEE6EEEEEEEEAAAAA     AS:i:-15        ZS:i:-15 XN:i:0  XM:i:5  XO:i:0  XG:i:0  NM:i:5  MD:Z:8T1A2T6T0T54YT:Z:UU NH:i:3
 ```
-1. QNAME -Read name
-2. FLAG - bitwise flag
-3. RNAME - Chromosome (if read is not aligned '*')
-4. POS - 1-based left-most mapping position
-5. MAPQ - Mapping quality
-6. CIGAR - describes the position of instertion(I),deletion(D) and matches(M) in alignment
-7. RNEXT - name of the pair sequence (in pair-ended sequences) - * unpaired
-8. PNEXT - position of pair 
-9. TLEN - Total span (size of pair reads and distance between them)
-10. SEQ - Read Sequence
-11. QUAL - Phred quality
-and TAG - TAG information (AS - alignment score, NH - number of reported alignments 
+ 1. QNAME -Read name
+ 2. FLAG - bitwise flag
+ 3. RNAME - Chromosome (if read is not aligned '*')
+ 4. POS - 1-based left-most mapping position
+ 5. MAPQ - Mapping quality
+ 6. CIGAR - describes the position of instertion(I),deletion(D) and matches(M) in alignment
+ 7. RNEXT - name of the pair sequence (in pair-ended sequences) - * unpaired
+ 8. PNEXT - position of pair 
+ 9. TLEN - Total span (size of pair reads and distance between them)
+ 10. SEQ - Read Sequence
+ 11. QUAL - Phred quality
+ and TAG - TAG information (AS - alignment score, NH - number of reported alignments 
 
 Sorting and Indexing BAM Files using SAMtool
 --------------------------------------------
-After alignment, the bam files created are unsorted. The samtools sort and index the BAM file based on genomic coordinates, which is essential for downstream analysis. The aims is to achieve fast retrieval of alignments mapped to regions without going through the whole alignments. The file is sorted based on:
+After alignment, the BAM files created are unsorted. The samtools sort and index the BAM file based on genomic coordinates, which is essential for downstream analysis. The aim is to achieve fast retrieval of alignments mapped to regions without having to process the entire set of alignments. The file is sorted based on:
 1. Chromosome name
 2. Start position 
 
-Since multiple files are needed to be aligned to genome index, sorted and indexed using samtool, the process is automated using python script. The code is provided in [`scripts/hisat_align.py`](scripts/hisat_align.py):
-
+Since multiple files need to be aligned to the genome index, sorted, and indexed using samtool, the process is automated using a Python script. The code is provided in [`scripts/hisat_align.py`](scripts/hisat_align.py):
 ```python
 files = [
     "LNCAP_Normoxia_S1.fastq.gz",
@@ -294,5 +291,14 @@ for file in files:
 print("All commands executed successfully")
 ```
 
-Quantifying reads using featureCounts
+Quantifying reads using FeatureCounts
 -------------------------------------
+The reads are quantified using FeatureCounts, which uses genomic coordinates in BAM files and maps to genomic features based on annotation in the reference genome.
+```bash
+featureCounts -s 0 -a ../fastq/Homo_sapiens.GRCh38.114.gtf \
+        -o ../fastq/{bam}_featurecounts.txt \
+        {bam}"
+```
+` -s ` : Indicate if strand-specific read counting should be performed.
+` -a ` : The annotation file to be used
+` -o ` : Name of the output directory
