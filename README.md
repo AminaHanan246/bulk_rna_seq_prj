@@ -224,10 +224,10 @@ The reads from FASTQ files are aligned to genome index using HISAT2, which does 
 ```bash
 hisat2 -p 8 -x GRCh38_index -U LNCAP_Normoxia_S1_R1_001.fastq.gz -S LNCAP_Normoxia_S1.sam
 ```
- ` -p ` : Number of threads to be used
- ` -x ` : Genome index to be used
- ` -U ` : Unpaired-reads to be aligned
- ` -S ` : Write file to SAM alignment
+ ` -p ` : Number of threads to be used                          
+ ` -x ` : Genome index to be used                                         
+ ` -U ` : Unpaired-reads to be aligned                                        
+ ` -S ` : Write file to SAM alignment                                              
 
 > [!NOTE] 
 > STAR aligner provides more accurate and sensitive mapping; however, HISAT2 is used here because it uses less memory and is significantly faster
@@ -310,7 +310,7 @@ featureCounts -s 0 -a ../fastq/Homo_sapiens.GRCh38.114.gtf \
  ` -o ` : Name of the output directory          
  `{bam}`: Name of the BAM file to be used
 
-The featureCounts output includes a count table, that contains read count for genome features, and summary of counting results
+The FeatureCounts output includes a count table, that contains read count for genome features, and summary of counting results
 The count table includes annotation columns: Geneid, Chr, Start, End, Strand, and Length, and reads counts for each genes. The count summary includes number of alignments that were successful and also number of assignment that failed.
 
 Since multiple files needs to be quantified, the following python script [`scripts/feature_counts.py`](scripts/feature_counts.py) is used:
@@ -345,15 +345,944 @@ After generating count tables and count summary for all the samples, the read co
 
 ---
 ## Downstream analysis
+Installing necessary packages
+-----------------------------
+```{r}
+# install necessary libraries
+install.packages("BiocManager")
+BiocManager::install(version = "devel")
+BiocManager::install("DESEQ2")
+BiocManager::install("ReactomePA")
+
+```
+
 
 Loading count data and meta data
 --------------------------------
+The count matrix created is load and column are sample-wise
+```{r}
+#Loading counts after running featureCounts
+raw_counts <- read.csv("data/GSE106305_counts_matrix.csv", header = TRUE, row.names = "Geneid", stringsAsFactors = FALSE)
+head(raw_counts)
+raw_counts <- raw_counts[,sort(colnames(raw_counts))]
+colSums(raw_counts)
+```
+The metadata is created where the condition for each sample is stored
+```{r}
+#setting up metadata
+condition <- c(rep("LNCAP_Hypoxia", 2), rep("LNCAP_Normoxia", 2), rep("PC3_Hypoxia", 2), rep("PC3_Normoxia", 2))
+print(condition)
+
+my_colData <- as.data.frame(condition)
+rownames(my_colData) <- colnames(raw_counts)
+write.csv(my_colData,file = "data/metadata.csv")
+```
+
+Creating DESeq Object
+--------------------
+```{r}
+library(DESeq2)
+
+dds <- DESeqDataSetFromMatrix(countData = raw_counts,
+                              colData = my_colData,
+                              design = ~condition)
+dds
+head(counts(dds))
 
 
+Genes with no gene expression across samples are checked. The table contains info in number of genes that have zero expression at different number of samples. 
+```{r}
+count_matrix <- counts(dds)
+dim(count_matrix)
+zero_counts_per_gene <- rowSums(count_matrix == 0)
+count_matrix <- as.data.frame(count_matrix)
+zero_summary <- table(zero_counts_per_gene)
+print(zero_summary) #number of genes with diff. number of zero gene expression in samples
+```
+
+Ensemble IDs to gene symbols using BioMart
+------------------------------------------
+Gene annotations (Ensembl ID, gene name, gene type) were downloaded via Ensembl BioMart <https://asia.ensembl.org/biomart/martview/03b16017eeb03b816d404a27eb7d9a55> and merged with the raw count matrix using Ensembl IDs.
+```{r}
+library(data.table)
+library(dplyr)
+
+annotation <- fread("data/GRCh38.p14_annotation.csv",stringsAsFactors = FALSE)
+#renaming colnames
+names(annotation)[names(annotation) %in% c("Gene stable ID", "Gene type", "Gene name")] <- c("Geneid", "Genebiotype", "Genesymbol")
+head(annotation)
+annotation$Geneid <- sub("\\..*$","",annotation$Geneid)
+#matrix to dataframe
+
+raw_counts <-read.csv("data/GSE106305_counts_matrix.csv",
+                     header = TRUE,
+                     stringsAsFactors = FALSE)
+head(raw_counts)
+raw_counts$Geneid <- sub("\\..*$","",raw_counts$Geneid)
+
+annotated_data <- left_join(raw_counts,annotation, by = "Geneid")
+head(annotated_data)
+dim(annotated_data)
+write.csv(annotated_data, file = "data/gene_annotated_raw_counts.csv")
+```
+
+Data filtering
+--------------
+Filtered the annotated count matrix to retain only protein-coding and immune-related gene types, reducing noise and focusing on biologically relevant signals
+```{r}
+genetypes_to_keep <- c("protein_coding", "IG_J_gene", "IG_V_gene", "IG_C_gene", "IG_D_gene", "TR_D_gene", "TR_C_gene", "TR_V_gene", "TR_J_gene")
+
+filtered_counts<- annotated_data[annotated_data$Genebiotype %in% genetypes_to_keep,]
+dim(filtered_counts)
+filtered_counts$Geneid <- sub("\\..*$", "", filtered_counts$Geneid)
+head(filtered_counts, n = 3)
+
+output_file <- "data/genetypes_counts_matrix.csv"
+fwrite(filtered_counts, file = output_file, sep = ",", row.names = FALSE)
+
+```
+
+Low-expression genes (zero counts in ≥7 samples) were removed to improve statistical power(2 replicates for each condition)
+```{r}
+zero_counts1 <- rowSums(filtered_counts[, 4:11] == 0)
+zero_summary2 <- table(zero_counts1)
+print(zero_summary2)
+#keep genes if less than 7 samples have zero expression (since 2 replicates)
+keep_genes <- zero_counts1 < 7
+filtered_counts_nozero <- filtered_counts[keep_genes, ]
+cat("Number of genes after filtering (zeros in <7 samples):", nrow(filtered_counts_nozero), "\n")
+
+new_zero_counts <- rowSums(filtered_counts_nozero[, 4:11] == 0)
+cat("New zero counts distribution:\n")
+print(table(new_zero_counts)) #check if removed successfully 
+
+output_file <- "data/genetype_nonzero_count_matrix.csv"
+fwrite(filtered_counts_nozero, file = output_file, sep = ",",row.names= FALSE)
+
+head(filtered_counts_nozero)
+dim(filtered_counts_nozero)
+```
+
+DeseqDataSet is filtered for only the genes left in the filtered counts. A table for genes that were removed from desired genetypes was created
+```{r}
+dds_filtered <- dds[rownames(dds) %in% filtered_counts_nozero$Geneid, ]
+cat("Dimensions of filtered DESeqDataSet:", dim(dds_filtered), "\n")
+head(dds_filtered)
+
+#list of zero gene expression > 7 sample under diff. gene types
+removed_genes <- filtered_counts[!keep_genes, ]
+cat("Biotype distribution of removed genes:\n")
+print(table(removed_genes$Genebiotype)) 
+```
+The proportion of biotypes left is visualised after filtering. 
+```{r}
+library(ggplot2)
+
+genetype_counts <-filtered_counts_nozero %>%
+  count(Genebiotype) %>%
+  mutate(Proportion = n/sum(n),
+         Percentage = Proportion * 100) %>%
+  rename(Biotype = Genebiotype)
+dim(genetype_counts)
+
+#Barplot
+p <- ggplot(genetype_counts, aes(x = reorder(Biotype, -Proportion), y = Proportion, fill = Biotype)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Proportion of Genes by Biotype",
+       x = "Gene Biotypes",
+       y = "Proportion") +
+  scale_y_continuous(labels = scales::percent_format(scale = 100)) +  # Show proportions as percentages
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+        legend.position = "none") +  # Remove legend if biotypes are clear
+  scale_fill_brewer(palette = "Set2")  # Use distinct colors
+p
+output_plot <- "results/genebiotype_proportions1.png"
+ggsave(output_plot, plot = p, width = 8, height = 6, dpi = 300)
+```
+
+PCA plot before DESeq
+---------------------
+PCA clusters samples with similar gene expression before Deseq. The variable stabilising transformation is deals with genes that are highly expressed in small datasets.The plot helps us to visualise variance structure and potential batch effect
+```{r}
+#Stabilising variance across genes in sample
+vsd <- vst(dds_filtered , blind = TRUE)
+
+#plot PCA
+plot_PCA = function (vsd.obj) {
+  pcaData <- plotPCA(vsd.obj,  intgroup = c("condition"), returnData = T)
+  percentVar <- round(100 * attr(pcaData, "percentVar"))
+  ggplot(pcaData, aes(PC1, PC2, color=condition)) +
+    geom_point(size=3) +
+    labs(x = paste0("PC1: ",percentVar[1],"% variance"),
+         y = paste0("PC2: ",percentVar[2],"% variance"),
+         title = "PCA Plot colored by condition") +
+    ggrepel::geom_text_repel(aes(label = name), color = "black")
+}
+png(filename = "results/pca_before.png", 
+    width = 2000, height = 2000, res = 300)  # adjust width/height as needed
+plot_PCA(vsd)
+dev.off()
+plot_PCA(vsd)
+```
+
+DESeq - for differential expressed genes
+----------------------------------------
+```{r}
+dds <- DESeq(dds_filtered)
+dds
+normalized_counts <- counts(dds, normalized = T)
+normalized_counts_df <- as.data.frame(normalized_counts)
+write.csv(normalized_counts_df, file = "data/normalized_counts.csv", row.names = TRUE)
+```
+
+PCA plot after DESeq
+--------------------
+PCA to check how well the samples cluster by condition. This helps confirm that replicates behave consistently and that the major sources of variation are biologically meaningful.
+```{r}
+
+vsd <- vst(dds, blind = TRUE)  # blind=TRUE for exploratory PCA
+
+plot_PCA = function (vsd.obj) {
+  pcaData <- plotPCA(vsd.obj,  intgroup = c("condition"), returnData = T)
+  percentVar <- round(100 * attr(pcaData, "percentVar"))
+  ggplot(pcaData, aes(PC1, PC2, color=condition)) +
+    geom_point(size=3) +
+    labs(x = paste0("PC1: ",percentVar[1],"% variance"),
+         y = paste0("PC2: ",percentVar[2],"% variance"),
+         title = "PCA Plot colored by condition") +
+    ggrepel::geom_text_repel(aes(label = name), color = "black")
+}
+
+png(filename = "results/pca_after.png", 
+    width = 2000, height = 2000, res = 300)  # adjust width/height as needed
+plot_PCA(vsd)
+dev.off()
+plot_PCA(vsd)
+```
+
+## Distance plot 
+The plot calculates Euclidean distance based on the expression values of genes in order to check how similar the expression profiles are across conditions. This helps spot outliers and confirms that replicates cluster as expected.
+```{r}
+plotDists = function (vsd.obj) {
+  sampleDists <- dist(t(assay(vsd.obj)))
+  sampleDistMatrix <- as.matrix( sampleDists )
+  rownames(sampleDistMatrix) <- paste( vsd.obj$condition )
+  colors <- colorRampPalette( rev(RColorBrewer::brewer.pal(9, "Blues")) )(55)
+  pheatmap::pheatmap(sampleDistMatrix,
+                     clustering_distance_rows = sampleDists,
+                     clustering_distance_cols = sampleDists,
+                     col = colors,
+                     fontsize_col = 4,
+                     fontsize_row = 4,
+                     fontsize_legend = 4,
+                     fontsize = 4)
+}
+png(filename = "results/sampleheatmap1.png", width = 1000, height = 900, res = 300)  # adjust width/height as needed
+plotDists(vsd)
+dev.off()
+plotDists(vsd)
+```
+
+Variable genes HeatMap
+----------------------
+The genes that drives the clustering can be visualised through Heatmap. Here top 40 variable genes are taken into account.
+```{r}
+variable_gene_heatmap <- function (vsd.obj, num_genes = 500, annotation, title = "") {
+  brewer_palette <- "RdBu"
+  ramp <- colorRampPalette( RColorBrewer::brewer.pal(11, brewer_palette))
+  mr <- ramp(256)[256:1]
+  stabilized_counts <- assay(vsd.obj)
+  row_variances <- rowVars(stabilized_counts)
+  top_variable_genes <- stabilized_counts[order(row_variances, decreasing=T)[1:num_genes],]
+  top_variable_genes <- top_variable_genes - rowMeans(top_variable_genes, na.rm=T)
+  gene_names <- annotation$Gene.name[match(rownames(top_variable_genes), annotation$Gene.stable.ID)]
+  rownames(top_variable_genes) <- gene_names
+  coldata <- as.data.frame(vsd.obj@colData)
+  coldata$sizeFactor <- NULL
+  pheatmap::pheatmap(top_variable_genes, color = mr, annotation_col = coldata, fontsize_col = 4, fontsize_row = 250/num_genes, border_color = NA, main = title)
+}
+
+png(filename = "results/variable_gene_heatmap.png", 
+    width = 2000, height = 1500, res = 300)  # adjust width/height as needed
+variable_gene_heatmap(vsd, num_genes = 40, annotation = annotation)
+dev.off()
+variable_gene_heatmap(vsd, num_genes = 40, annotation = annotation)
+
+```
+Density plots
+-------------
+Plotted density curves for raw and VST-transformed counts across all samples to check how well variance was stabilized. This helps confirm that expression distributions are more comparable post-transformation.
+```{r}
+raw_counts <- assay(dds)
+vst_counts <- assay(vsd)
+
+png("results/density_plots_raw_vst.png",
+    width = 4000, height = 4000, res = 300)  # Adjust width, height (pixels), and resolution (dpi)
+
+par(mfrow = c(4, 4), mar = c(3, 3, 2, 1))  # mar adjusts margins (bottom, left, top, right)
+
+for (i in 1:8) {
+  # Raw counts density
+  plot(density(raw_counts[, i]),
+       main = paste("Raw - Sample", colnames(raw_counts)[i]),
+       xlab = "Expression",
+       col = "red",
+       lwd = 2,
+       ylim = c(0, max(sapply(1:8, function(j) max(density(raw_counts[, j])$y, na.rm = TRUE))))  # Uniform y-axis
+       )
+  
+  # VST counts density (next panel)
+  plot(density(vst_counts[, i]),
+       main = paste("VST - Sample", colnames(vst_counts)[i]),
+       xlab = "Expression",
+       col = "blue",
+       lwd = 2,
+       ylim = c(0, max(sapply(1:8, function(j) max(density(vst_counts[, j])$y, na.rm = TRUE))))  # Uniform y-axis
+       )
+}
+dev.off()
+```
+Gene expression profile - IGFBP1
+--------------------------------
+```{r}
+library(tibble)
+plot_counts <- function (dds, gene, normalization = "DESeq2"){
+  
+  if (normalization == "cpm") {
+    normalized_data <- cpm(counts(dds, normalized = F)) 
+  } else if (normalization == "DESeq2")
+    normalized_data <- counts(dds, normalized = T) 
+  condition <- dds@colData$condition
+  if (is.numeric(gene)) { 
+    if (gene%%1==0 )
+      ensembl_id <- rownames(normalized_data)[gene]
+    else
+      stop("Invalid index supplied.")
+  } else if (gene %in% annotation$Genesymbol){ 
+    ensembl_id <- annotation$Geneid[which(annotation$Genesymbol == gene)]
+  } else if (gene %in% annotation$Geneid){
+    ensembl_id <- gene
+  } else {
+    stop("Gene not found. Check spelling.")
+  }
+  
+  expression <- normalized_data[ensembl_id,]
+  gene_name <- annotation$Genesymbol[which(annotation$Geneid == ensembl_id)]
+  gene_tib <- tibble(condition = condition, expression = expression)
+  ggplot(gene_tib, aes(x = condition, y = expression))+
+    geom_boxplot(outlier.size = NULL)+
+    geom_point()+
+    labs (title = paste0("Expression of ", gene_name, " - ", ensembl_id), x = "group", y = paste0("Normalized expression (", normalization , ")"))+
+    theme(axis.text.x = element_text(size = 11), axis.text.y = element_text(size = 11))
+}
+
+gene_plot<-plot_counts(dds, "IGFBP1")
+ggsave(filename ="results/IGFBP1_cond.png" , plot = gene_plot,bg = "white", width = 8, height = 6, dpi = 300)
+```
+#LNCAP - Hypoxia VS Normoxia
+The LNCAP sampled were filtered from dataset, to compare hypoxia vs normoxia. Normoxia is set as reference and DESeq2 was ran. The genes are ordered based on adjusted p-values
+```{r}
+# Filter the DESeq2 dataset (dds) to keep only LNCAP samples
+dds_lncap <- dds[, grepl("LNCAP", colnames(dds))]
+dds_lncap
+dds_lncap$condition <- droplevels(dds_lncap$condition)#removing unrelated levels
+#setting LNCAP Normoxia as reference
+dds_lncap$condition <- relevel(dds_lncap$condition, ref = "LNCAP_Normoxia")
+dds_lncap <- DESeq(dds_lncap)
+
+# Extract differential expression results for contrast: LNCAP_Hypoxia vs LNCAP_Normoxia
+res_lncap <- results(dds_lncap, contrast = c("condition", "LNCAP_Hypoxia", "LNCAP_Normoxia"))
+res_lncap
+summary(res_lncap)
+
+reslncapOrdered <- res_lncap[order(res_lncap$padj), ] #order with padj values
+sum(reslncapOrdered$padj < 0.05, na.rm = TRUE)
+head(reslncapOrdered)
+summary(reslncapOrdered)
+write.csv(as.data.frame(reslncapOrdered), file = "data/DEGs_lncap.csv")
+
+```
+
+```{r}
+plotMA(reslncapOrdered,ylim=c(-2,2))
+```
+Volcano plot - gene regulation
+-------------------------------
+The gene regulation across condition is varied in LNCAP cell lines, based on which volcano plot is created. Genes were categorized as upregulated, downregulated, or not significant based on fold change and adjusted p-value.
+```{r}
+#install.packages("ggplot2")
+library(ggplot2)
+res_df <- as.data.frame(reslncapOrdered)
+res_df <- na.omit(res_df)
+res_df$gene <- rownames(res_df) #gene names added as column
+
+#Gene regulation categorised
+res_df$regulation <- "Not Significant" #defaulted 
+res_df$regulation[res_df$padj < 0.05 & res_df$log2FoldChange > 1] <- "Upregulated"
+res_df$regulation[res_df$padj < 0.05 & res_df$log2FoldChange < -1] <- "Downregulated"
+
+#Volcano plot
+qp <- ggplot(res_df, aes(x = log2FoldChange, 
+                         y = -log10(padj), 
+                         color = regulation)) + #categorise based on regulation
+  geom_point(alpha = 0.6) +
+  scale_color_manual(values = c("Upregulated" = "#FEA405", 
+                                "Downregulated" = "purple", 
+                                "Not Significant" = "gray")) +
+  #Threshold line at padj = 0.05
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black") +
+  #placement of text
+  annotate("text", x = min(res_df$log2FoldChange), y = -log2(0.05) + 0.5,
+           label = "padj = 0.05", hjust = 0, size = 3) +
+  theme_minimal() +
+  #labels
+  labs(title = "Volcano Plot", 
+       x = "Log2 Fold Change", 
+       y = "-Log10 Adjusted P-Value") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+v_plot <- "results/vp_lncap.png"
+ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
+qp
+```
+
+Gene Set Enrichment Analysis (GSEA)
+-----------------------------------
+GSEA was performed using ReactomePA on DESeq2-derived log2 fold changes from LNCaP cells under hypoxia versus normoxia. Ensembl IDs were mapped to Entrez IDs, and genes were ranked by fold change. Enriched pathways were identified based on normalized enrichment scores (NES) and adjusted p-values.
+```{r}
+res_lncap <- read.csv("data/DEGs_lncap.csv", row.names = 1)
+head(res_lncap)
+
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(dplyr)
+library(stats)
+
+#convert ENSEMBL ids to entrez ids for Reactome
+ncbi_list <- clusterProfiler::bitr(
+  geneID = rownames(res_lncap),        # use Ensembl IDs from row names
+  fromType = "ENSEMBL",          
+  toType = "ENTREZID", 
+  OrgDb = org.Hs.eg.db
+)
+#Column with Esemble ids
+res_lncap$ENSEMBL <- rownames(res_lncap)
+head(res_lncap)
+
+#Merge ncbi_list with valid entrez id and remove duplicates 
+res_mapped <- res_lncap %>%
+  left_join(ncbi_list, by = "ENSEMBL") %>%
+  filter(!is.na(ENTREZID)) %>%
+  distinct(ENTREZID, .keep_all = TRUE)
+
+#Genes ranked based on log2FoldChange
+ngenes <- res_mapped$log2FoldChange
+names(ngenes) <- res_mapped$ENTREZID
+ngenes <- sort(ngenes, decreasing = TRUE)
+
+#GSEA
+library(ReactomePA)
+enp_gsea <- gsePathway(
+  ngenes,
+  organism = "human",
+  #pvalueCutoff = 0.05,
+  #pAdjustMethod = "BH",
+  #minGSSize = 10,  
+  #maxGSSize = 500, 
+  verbose = FALSE
+)
+head(enp_gsea@result)
+```
+GSEA results are sorted by adjusted p-value and normalized enrichment score (NES) to highlight the most responsive pathways. Here entire expression profile (including non-significant genes) is considered
+```{r}
+pathways <- enp_gsea@result 
+# Sort pathways by adjusted p-value (FDR) to prioritize statistically significant ones
+pathways <- pathways[order(pathways$p.adjust), ]
+
+#Reorder by absolute NES to highlight strongest up/down regulated pathways
+top_pathways <- pathways[order(abs(pathways$NES), decreasing = TRUE), ]  # Sort by NES
+
+library(dplyr)
+library(forcats)
+
+top20 <- top_pathways[1:20, ] %>%
+  mutate(Description = fct_reorder(Description, NES)) # Reorder factor for y-axis based on NES
+
+write.csv(top20, "data/top20_pathways.csv", row.names = FALSE)
+
+```
+
+## Pathway enrichment based on overall expression profile
+Plotted the top Reactome pathways from GSEA using NES, FDR, and gene set size to show which biological processes are most enriched
+```{r}
+library(ggplot2)
+
+enrich_overall <- ggplot(top20, aes(x = NES,                 
+                        y = Description,
+                        color = p.adjust,
+                        size = setSize)) +
+  geom_point(alpha = 0.9) +
+  scale_color_gradient(low = "#0072B2", high = "#D55E00", name = "FDR (p.adjust)") +
+  scale_size(range = c(3, 10), name = "Gene Set Size") +
+  labs(
+    title = "Top 10 Enriched Pathways",
+    subtitle = "Gene Set Enrichment Analysis (GSEA)",
+    x = "Normalized Enrichment Score (NES)",
+    y = NULL,
+    caption = "Data source: clusterProfiler::gsePathway"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 12),
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(size = 13),
+    legend.position = "right"
+  )
+ggsave("results/enrichment_overall_lncap.png", 
+       plot = enrich_overall,
+       bg = "white",
+       width = 15, height = 6, dpi = 300)
 
 
+```
+
+## Pathway enrichment by significant DEGs
+Pathway enrichment using ReactomePA to see which biological processes are impacted in the significant DEGs
+```{r}
+library(ReactomePA)
+# Filter DEGs: padj < 0.1 and |log2FC| > 0.5, then extract ENTREZ IDs
+sig_genes <- res_mapped %>%
+  filter(padj < 0.1, abs(log2FoldChange) > 0.5) %>%
+  pull(ENTREZID)
+# Run Reactome pathway enrichment for significant genes
+enr <- enrichPathway(gene = sig_genes, organism = "human", pvalueCutoff = 0.1)
+
+reactome_plot <- dotplot(enr, showCategory=20)
+ggsave("results/react_sig_genes_lncap.png", 
+       plot = reactome_plot, 
+       bg = "white",
+       width = 8, height = 10, dpi = 300)
+
+```
+
+## GSEA of Hallmark Programs 
+in order to understand broad biological responses in LNCAP cells under hypoxia
+
+Ranked Gene List for GSEA using log2fold change
+```{r}
+head(res_lncap)
+# Map Ensembl IDs to gene symbols using org.Hs.eg.db
+symbol_map <- bitr(res_lncap$ENSEMBL, fromType = "ENSEMBL", toType = "SYMBOL", OrgDb = org.Hs.eg.db)
+
+# Merge and filter
+rank_df <- merge(res_lncap, symbol_map, by.x = "ENSEMBL", by.y = "ENSEMBL")
+rank_df <- rank_df[, c("SYMBOL", "log2FoldChange")]
+colnames(rank_df) <- c("Gene.name", "log2FoldChange")
+
+# Save as .rnk
+head(rank_df)
+write.table(rank_df, file = "data/lncaprank.rnk", sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+```
 
 
+Downloaded Hallmark gene sets from MSigDB <https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp#H> and prepped the ranked list for GSEA
+```{r}
+library(fgsea)
+# Load Hallmark gene sets from GMT file
+hallmark_pathway <- gmtPathways("data/h.all.v2025.1.Hs.symbols.gmt")
+head(names(hallmark_pathway))
+head(hallmark_pathway$HALLMARK_HYPOXIA, 20)
+
+lncap_ranked_list <- read.table("data/lncaprank.rnk", header = T, stringsAsFactors = F)
+head(lncap_ranked_list)
+
+#Clean and prepare ranked list for fgsea
+prepare_ranked_list <- function(ranked_list) { 
+  if( sum(duplicated(ranked_list$Gene.name)) > 0) {
+    ranked_list <- aggregate(.~Gene.name, FUN = mean, data = ranked_list)
+    ranked_list <- ranked_list[order(ranked_list$log2FoldChange, decreasing = T),]
+  }
+  # Remove NA values
+  ranked_list <- na.omit(ranked_list)
+  #Convert data frame to name vector 
+  ranked_list <- tibble::deframe(ranked_list)
+  ranked_list
+}
+
+lncap_ranked_list <- prepare_ranked_list(lncap_ranked_list)
+head(lncap_ranked_list)
+```
+
+### Validate Ranked Gene list
+```{r}
+prepare_ranked_list <- function(ranked_list) {
+  #check if nammed numeric vector
+  if (is.vector(ranked_list) && !is.list(ranked_list)) {
+    return(ranked_list)  # Return as-is if already processed
+  }
+  #check for requiered columns
+  if (!is.data.frame(ranked_list)) {
+    stop("Input 'ranked_list' must be a data frame with 'Gene.name' and 'log2FoldChange' columns.")
+  }
+  #Check duplicate genes and avg. fold change
+  if (sum(duplicated(ranked_list$Gene.name)) > 0) {
+    ranked_list <- aggregate(. ~ Gene.name, data = ranked_list, FUN = mean)
+    ranked_list <- ranked_list[order(ranked_list$log2FoldChange, decreasing = TRUE), ]
+  }
+
+  ranked_list <- na.omit(ranked_list)
+  ranked_list <- tibble::deframe(ranked_list[, c("Gene.name", "log2FoldChange")])
+
+  return(ranked_list)
+}
+#check if rank list exists
+if (!exists("data/lncap_ranked_list")) {
+   #Convert res_lncap to a ranked list data
+  symbol_map <- bitr(res_lncap$ENSEMBL, fromType = "ENSEMBL", toType = "SYMBOL", OrgDb = org.Hs.eg.db)
+  rank_df <- merge(res_lncap, symbol_map, by.x = "ENSEMBL", by.y = "ENSEMBL")
+  rank_df <- rank_df[, c("SYMBOL", "log2FoldChange")]
+  colnames(rank_df) <- c("Gene.name", "log2FoldChange")
+  lncap_ranked_list <- rank_df
+}
+
+
+lncap_ranked_list <- prepare_ranked_list(lncap_ranked_list)
+print(head(lncap_ranked_list))
+```
+
+Run GSEA using Hallmark gene sets and ranked LNCaP gene list
+```{r}
+fgsea_results <- fgsea(pathways = hallmark_pathway,
+                  stats = lncap_ranked_list,
+                  minSize = 15,
+                  maxSize = 500,
+                  nperm= 1000)
+#Sort by decreasing NES
+fgsea_results_ordered <- fgsea_results[order(-NES)]
+head(fgsea_results_ordered[, .(pathway, padj, NES)])
+```
+
+## Hallmark GSEA – LNCaP Hypoxia Response
+The plot to show which Hallmark programs are enriched in LNCaP cells under hypoxia. Pathways are sorted by NES, and bars are colored by significance (padj < 0.05).
+
+```{r}
+#install.packages("waterfalls")
+library(waterfalls)
+
+waterfall_plot <- function (fsgea_results, graph_title) {
+  fgsea_results %>% 
+    mutate(short_name = str_split_fixed(pathway, "_",2)[,2])%>% # removes 'HALLMARK_' from the pathway title 
+    ggplot( aes(reorder(short_name,NES), NES)) +
+      geom_bar(stat= "identity", aes(fill = padj<0.05))+
+      coord_flip()+
+      labs(x = "Hallmark Pathway", y = "Normalized Enrichment Score", title = graph_title)+
+      theme(axis.text.y = element_text(size = 7), 
+            plot.title = element_text(hjust = 1))
+}
+library(stringr)
+hallmark_enrich<- waterfall_plot(fgsea_results, "Hallmark pathways altered by hypoxia in LNCaP cells")
+ggsave("results/hallmark_enrich_lncap.png", 
+       plot = hallmark_enrich, 
+       bg = "white",
+       width = 10, height = 10, dpi = 300)
+```
+
+
+#PC3 - Hypoxia VS Normoxia
+The variabilty of genes expression across condition for PC3 cell lime is checked
+From the dds, only LNCAP cell lines are filtered 
+```{r}
+# Filter the DESeq2 dataset (dds) to keep only LNCAP samples
+dds_pc3 <- dds[, grepl("PC3", colnames(dds))]
+dds_pc3
+dds_pc3$condition <- droplevels(dds_pc3$condition)#removing unrelated levels
+#setting PC3 Normoxia as reference
+dds_pc3$condition <- relevel(dds_pc3$condition, ref = "PC3_Normoxia")
+dds_pc3 <- DESeq(dds_pc3)
+
+# Extract differential expression results for contrast: LNCAP_Hypoxia vs LNCAP_Normoxia
+res_pc3 <- results(dds_pc3, contrast = c("condition", "PC3_Hypoxia", "PC3_Normoxia"))
+res_pc3
+summary(res_pc3)
+
+respc3Ordered <- res_pc3[order(res_pc3$padj), ] #order with padj values
+sum(respc3Ordered$padj < 0.05, na.rm = TRUE)
+head(respc3Ordered)
+summary(respc3Ordered)
+write.csv(as.data.frame(respc3Ordered), file = "data/DEGs_pc3.csv")
+
+```
+
+
+```{r}
+plotMA(respc3Ordered)
+```
+
+Volcano plot - gene regulation
+------------------------------
+```{r}
+#install.packages("ggplot2")
+library(ggplot2)
+res_df <- as.data.frame(respc3Ordered)
+res_df <- na.omit(res_df)
+res_df$gene <- rownames(res_df) #gene names added as column
+
+#Gene regulation categorised
+res_df$regulation <- "Not Significant" #defaulted 
+res_df$regulation[res_df$padj < 0.05 & res_df$log2FoldChange > 1] <- "Upregulated"
+res_df$regulation[res_df$padj < 0.05 & res_df$log2FoldChange < -1] <- "Downregulated"
+
+#Volcano plot
+qp <- ggplot(res_df, aes(x = log2FoldChange, 
+                         y = -log10(padj), 
+                         color = regulation)) + #categorise based on regulation
+  geom_point(alpha = 0.6) +
+  scale_color_manual(values = c("Upregulated" = "#FEA405", 
+                                "Downregulated" = "purple", 
+                                "Not Significant" = "gray")) +
+  #Threshold line at padj = 0.05
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black") +
+  #placement of text
+  annotate("text", x = min(res_df$log2FoldChange), y = -log2(0.05) + 0.5,
+           label = "padj = 0.05", hjust = 0, size = 3) +
+  theme_minimal() +
+  #labels
+  labs(title = "Volcano Plot", 
+       x = "Log2 Fold Change", 
+       y = "-Log10 Adjusted P-Value") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+v_plot <- "results/vp_pc3.png"
+ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
+qp
+```
+
+Gene Set Enrichment Analysis (GSEA)
+-----------------------------------
+```{r}
+res_pc3 <- read.csv("data/DEGs_pc3.csv", row.names = 1)
+head(res_pc3)
+
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(dplyr)
+library(stats)
+
+#convert ENSEMBL ids to entrez ids for Reactome
+ncbi_list <- clusterProfiler::bitr(
+  geneID = rownames(res_pc3),        # use Ensembl IDs from row names
+  fromType = "ENSEMBL",          
+  toType = "ENTREZID", 
+  OrgDb = org.Hs.eg.db
+)
+#Column with Esemble ids
+res_pc3$ENSEMBL <- rownames(res_pc3)
+head(res_pc3)
+
+#Merge ncbi_list with valid entrez id and remove duplicates 
+res_mapped <- res_pc3 %>%
+  left_join(ncbi_list, by = "ENSEMBL") %>%
+  filter(!is.na(ENTREZID)) %>%
+  distinct(ENTREZID, .keep_all = TRUE)
+
+#Genes ranked based on log2FoldChange
+ngenes <- res_mapped$log2FoldChange
+names(ngenes) <- res_mapped$ENTREZID
+ngenes <- sort(ngenes, decreasing = TRUE)
+
+#GSEA
+library(ReactomePA)
+enp_gsea <- gsePathway(
+  ngenes,
+  organism = "human",
+  #pvalueCutoff = 0.05,
+  #pAdjustMethod = "BH",
+  #minGSSize = 10,  
+  #maxGSSize = 500, 
+  verbose = FALSE
+)
+head(enp_gsea@result)
+```
+
+## Pathway enrichment based on overall expression profile
+```{r}
+pathways <- enp_gsea@result
+pathways <- pathways[order(pathways$p.adjust), ]# Sort by FDR (adjusted p-value)
+top_pathways <- pathways[order(abs(pathways$NES), decreasing = TRUE), ]  # Sort by NES
+
+library(dplyr)
+library(forcats)
+
+top20 <- top_pathways[1:20, ] %>%
+  mutate(Description = fct_reorder(Description, NES))  # Reorder factor for y-axis
+
+write.csv(top20, "data/top20_pathways_pc3.csv", row.names = FALSE)
+
+```
+
+```{r}
+
+library(ggplot2)
+
+enrich_overall <- ggplot(top20, aes(x = NES,
+                        y = Description,
+                        color = p.adjust,
+                        size = setSize)) +
+  geom_point(alpha = 0.9) +
+  scale_color_gradient(low = "#0072B2", high = "#D55E00", name = "FDR (p.adjust)") +
+  scale_size(range = c(3, 10), name = "Gene Set Size") +
+  labs(
+    title = "Top 10 Enriched Pathways",
+    subtitle = "Gene Set Enrichment Analysis (GSEA)",
+    x = "Normalized Enrichment Score (NES)",
+    y = NULL,
+    caption = "Data source: clusterProfiler::gsePathway"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 12),
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(size = 13),
+    legend.position = "right"
+  )
+
+ggsave("results/enrichment_overall_pc3.png", 
+       plot = enrich_overall,
+       bg = "white",
+       width = 15, height = 6, dpi = 300)
+
+```
+
+## Pathway enrichment by significant DEGs
+```{r}
+library(ReactomePA)
+sig_genes <- res_mapped %>%
+  filter(padj < 0.1, abs(log2FoldChange) > 0.5) %>%
+  pull(ENTREZID)
+enr <- enrichPathway(gene = sig_genes, organism = "human", pvalueCutoff = 0.1)
+reactome_plot<- dotplot(enr, showCategory=20)
+ggsave("results/react_sig_genes_pc3.png", 
+       plot = reactome_plot, 
+       bg = "white",
+       width = 8, height = 10, dpi = 300)
+```
+
+## GSEA of Hallmark Programs
+```{r}
+head(res_pc3)
+symbol_map <- bitr(res_pc3$ENSEMBL, fromType = "ENSEMBL", toType = "SYMBOL", OrgDb = org.Hs.eg.db)
+
+# Merge and filter
+rank_df_pc3 <- merge(res_pc3, symbol_map, by.x = "ENSEMBL", by.y = "ENSEMBL")
+rank_df_pc3 <- rank_df_pc3[, c("SYMBOL", "log2FoldChange")]
+colnames(rank_df_pc3) <- c("Gene.name", "log2FoldChange")
+
+# Save as .rnk
+head(rank_df_pc3)
+write.table(rank_df_pc3, file = "data/pc3rank.rnk", sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+```
+
+
+```{r}
+library(fgsea)
+
+hallmark_pathway <- gmtPathways("data/h.all.v2025.1.Hs.symbols.gmt")
+head(names(hallmark_pathway))
+head(hallmark_pathway$HALLMARK_HYPOXIA, 20)
+
+pc3_ranked_list <- read.table("data/pc3rank.rnk", header = T, stringsAsFactors = F)
+head(pc3_ranked_list)
+
+prepare_ranked_list <- function(ranked_list) { 
+  if( sum(duplicated(ranked_list$Gene.name)) > 0) {
+    ranked_list <- aggregate(.~Gene.name, FUN = mean, data = ranked_list)
+    ranked_list <- ranked_list[order(ranked_list$log2FoldChange, decreasing = T),]
+  }
+  ranked_list <- na.omit(ranked_list)
+  ranked_list <- tibble::deframe(ranked_list)
+  ranked_list
+}
+
+pc3_ranked_list <- prepare_ranked_list(pc3_ranked_list)
+head(pc3_ranked_list)
+```
+
+### Validate Ranked Gene list
+```{r}
+prepare_ranked_list <- function(ranked_list) {
+  if (is.vector(ranked_list) && !is.list(ranked_list)) {
+    return(ranked_list)  # Return as-is if already processed
+  }
+
+  if (!is.data.frame(ranked_list)) {
+    stop("Input 'ranked_list' must be a data frame with 'Gene.name' and 'log2FoldChange' columns.")
+  }
+  if (sum(duplicated(ranked_list$Gene.name)) > 0) {
+    ranked_list <- aggregate(. ~ Gene.name, data = ranked_list, FUN = mean)
+    ranked_list <- ranked_list[order(ranked_list$log2FoldChange, decreasing = TRUE), ]
+  }
+
+  ranked_list <- na.omit(ranked_list)
+  ranked_list <- tibble::deframe(ranked_list[, c("Gene.name", "log2FoldChange")])
+
+  return(ranked_list)
+}
+
+if (!exists("pc3_ranked_list")) {
+  symbol_map <- bitr(res_pc3$ENSEMBL, fromType = "ENSEMBL", toType = "SYMBOL", OrgDb = org.Hs.eg.db)
+  rank_df_pc3 <- merge(res_pc3, symbol_map, by.x = "ENSEMBL", by.y = "ENSEMBL")
+  rank_df_pc3 <- rank_df_pc3[, c("SYMBOL", "log2FoldChange")]
+  colnames(rank_df_pc3) <- c("Gene.name", "log2FoldChange")
+  pc3_ranked_list <- rank_df_pc3
+  # Example: Convert res_lncap to a ranked list data frame
+  }
+
+pc3_ranked_list <- prepare_ranked_list(pc3_ranked_list)
+print(head(pc3_ranked_list))
+```
+
+Run GSEA using Hallmark gene sets and ranked LNCaP gene list
+```{r}
+fgsea_results <- fgsea(pathways = hallmark_pathway,
+                  stats = pc3_ranked_list,
+                  minSize = 15,
+                  maxSize = 500,
+                  nperm= 1000)
+fgsea_results_ordered <- fgsea_results[order(-NES)]
+head(fgsea_results_ordered[, .(pathway, padj, NES)])
+
+```
+
+## Hallmark GSEA – PC3 Hypoxia Response
+```{r}
+waterfall_plot <- function (fsgea_results, graph_title) {
+  fgsea_results %>% 
+    mutate(short_name = str_split_fixed(pathway, "_",2)[,2])%>% # removes 'HALLMARK_' from the pathway title 
+    ggplot( aes(reorder(short_name,NES), NES)) +
+      geom_bar(stat= "identity", aes(fill = padj<0.05))+
+      coord_flip()+
+      labs(x = "Hallmark Pathway", y = "Normalized Enrichment Score", title = graph_title)+
+      theme(axis.text.y = element_text(size = 7), 
+            plot.title = element_text(hjust = 1))
+}
+library(stringr)
+hallmark_enrich <- waterfall_plot(fgsea_results, "Hallmark pathways altered by hypoxia in PC3 cells")
+ggsave("results/hallmark_enrich_pc3.png", 
+       plot = hallmark_enrich, 
+       bg = "white",
+       width = 10, height = 10, dpi = 300)
+```
+### Session info
+```{r}
+sink("session_info.txt")
+sessionInfo()
+sink()
+```
+
+*THE END*
 
 
 https://bioconductor.org/packages/devel/bioc/vignettes/Rsubread/inst/doc/SubreadUsersGuide.pdf             
