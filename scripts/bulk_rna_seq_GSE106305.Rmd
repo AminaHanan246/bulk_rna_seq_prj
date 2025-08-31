@@ -41,8 +41,8 @@ Counts obtained from featureCounts are loaded and metadata created to be fed int
 ```{r}
 #Loading counts after running featureCounts
 raw_counts <- read.csv("data/GSE106305_counts_matrix.csv", header = TRUE, row.names = "Geneid", stringsAsFactors = FALSE)
-head(raw_counts)
 raw_counts <- raw_counts[,sort(colnames(raw_counts))]
+head(raw_counts)
 colSums(raw_counts)
 
 #setting up metadata
@@ -142,7 +142,6 @@ DeseqDataSet is filtered for only the genes left in the filtered counts. A table
 dds_filtered <- dds[rownames(dds) %in% filtered_counts_nozero$Geneid, ]
 cat("Dimensions of filtered DESeqDataSet:", dim(dds_filtered), "\n")
 head(dds_filtered)
-dim(dds_filtered)
 
 #list of zero gene expression > 7 sample under diff. gene types
 removed_genes <- filtered_counts[!keep_genes, ]
@@ -374,7 +373,7 @@ write.csv(as.data.frame(reslncapOrdered), file = "data/DEGs_lncap.csv")
 
 
 ```{r}
-plotMA(reslncapOrdered)
+plotMA(reslncapOrdered,ylim=c(-2,2))
 ```
 ###Volcano plot - gene regulation
 The gene regulation across condition is varied in LNCAP cell lines, based on which volcano plot is created. Genes were categorized as upregulated, downregulated, or not significant based on fold change and adjusted p-value.
