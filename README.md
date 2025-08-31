@@ -388,7 +388,7 @@ dds <- DESeqDataSetFromMatrix(countData = raw_counts,
                               design = ~condition)
 dds
 head(counts(dds))
-
+```
 
 Genes with no gene expression across samples are checked. The table contains info in number of genes that have zero expression at different number of samples. 
 ```{r}
@@ -402,7 +402,7 @@ print(zero_summary) #number of genes with diff. number of zero gene expression i
 
 Ensemble IDs to gene symbols using BioMart
 ------------------------------------------
-Gene annotations (Ensembl ID, gene name, gene type) were downloaded via Ensembl BioMart <https://asia.ensembl.org/biomart/martview/03b16017eeb03b816d404a27eb7d9a55> and merged with the raw count matrix using Ensembl IDs.
+Gene annotations (Ensemble ID, gene name, gene type) were downloaded via Ensembl BioMart <https://asia.ensembl.org/biomart/martview/03b16017eeb03b816d404a27eb7d9a55> and merged with the raw count matrix using Ensemble IDs.
 ```{r}
 library(data.table)
 library(dplyr)
@@ -500,6 +500,7 @@ p
 output_plot <- "results/genebiotype_proportions1.png"
 ggsave(output_plot, plot = p, width = 8, height = 6, dpi = 300)
 ```
+![Amount of protein coding anf other in](results/genebiotype_proportions1.png)
 
 PCA plot before DESeq
 ---------------------
@@ -525,6 +526,7 @@ plot_PCA(vsd)
 dev.off()
 plot_PCA(vsd)
 ```
+![PCA before DESEQ ](results/pca_before.png)
 
 DESeq - for differential expressed genes
 ----------------------------------------
@@ -560,6 +562,7 @@ plot_PCA(vsd)
 dev.off()
 plot_PCA(vsd)
 ```
+![PCA before DESEQ ](results/pca_after.png)
 
 ## Distance plot 
 The plot calculates Euclidean distance based on the expression values of genes in order to check how similar the expression profiles are across conditions. This helps spot outliers and confirms that replicates cluster as expected.
@@ -583,10 +586,11 @@ plotDists(vsd)
 dev.off()
 plotDists(vsd)
 ```
+![PCA before DESEQ ](results/sampleheatmap1.png)
 
 Variable genes HeatMap
 ----------------------
-The genes that drives the clustering can be visualised through Heatmap. Here top 40 variable genes are taken into account.
+The genes that drives the clustering of the samples can be visualised through Heatmap. Here top 40 variable genes are taken into account.
 ```{r}
 variable_gene_heatmap <- function (vsd.obj, num_genes = 500, annotation, title = "") {
   brewer_palette <- "RdBu"
@@ -610,9 +614,11 @@ dev.off()
 variable_gene_heatmap(vsd, num_genes = 40, annotation = annotation)
 
 ```
+![PCA before DESEQ ](results/variable_gene_heatmap.png)
+
 Density plots
 -------------
-Plotted density curves for raw and VST-transformed counts across all samples to check how well variance was stabilized. This helps confirm that expression distributions are more comparable post-transformation.
+Plotted density curves for raw and VST-transformed counts across all samples to check how well variance was stabilized. This helps confirm that expression distributions are more comparable post-transformation using VST.
 ```{r}
 raw_counts <- assay(dds)
 vst_counts <- assay(vsd)
@@ -643,6 +649,8 @@ for (i in 1:8) {
 }
 dev.off()
 ```
+![PCA before DESEQ ](results/density_plots_raw_vst.png)
+
 Gene expression profile - IGFBP1
 --------------------------------
 ```{r}
@@ -680,6 +688,8 @@ plot_counts <- function (dds, gene, normalization = "DESeq2"){
 gene_plot<-plot_counts(dds, "IGFBP1")
 ggsave(filename ="results/IGFBP1_cond.png" , plot = gene_plot,bg = "white", width = 8, height = 6, dpi = 300)
 ```
+![PCA before DESEQ ](results/IGFBP1_cond.png)
+
 #LNCAP - Hypoxia VS Normoxia
 The LNCAP sampled were filtered from dataset, to compare hypoxia vs normoxia. Normoxia is set as reference and DESeq2 was ran. The genes are ordered based on adjusted p-values
 ```{r}
@@ -746,6 +756,7 @@ v_plot <- "results/vp_lncap.png"
 ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
 qp
 ```
+![PCA before DESEQ ](results/pca_after.png)
 
 Gene Set Enrichment Analysis (GSEA)
 -----------------------------------
@@ -847,6 +858,7 @@ ggsave("results/enrichment_overall_lncap.png",
 
 
 ```
+![PCA before DESEQ ](results/pca_after.png)
 
 ## Pathway enrichment by significant DEGs
 Pathway enrichment using ReactomePA to see which biological processes are impacted in the significant DEGs
@@ -866,6 +878,7 @@ ggsave("results/react_sig_genes_lncap.png",
        width = 8, height = 10, dpi = 300)
 
 ```
+![PCA before DESEQ ](results/pca_after.png)
 
 ## GSEA of Hallmark Programs 
 in order to understand broad biological responses in LNCAP cells under hypoxia
@@ -988,8 +1001,9 @@ ggsave("results/hallmark_enrich_lncap.png",
        bg = "white",
        width = 10, height = 10, dpi = 300)
 ```
+![PCA before DESEQ ](results/pca_after.png)
 
-
+===
 #PC3 - Hypoxia VS Normoxia
 The variabilty of genes expression across condition for PC3 cell lime is checked
 From the dds, only LNCAP cell lines are filtered 
