@@ -690,6 +690,8 @@ ggsave(filename ="results/IGFBP1_cond.png" , plot = gene_plot,bg = "white", widt
 ```
 ![PCA before DESEQ ](results/IGFBP1_cond.png)
 
+---
+
 #LNCAP - Hypoxia VS Normoxia
 The LNCAP sampled were filtered from dataset, to compare hypoxia vs normoxia. Normoxia is set as reference and DESeq2 was ran. The genes are ordered based on adjusted p-values
 ```{r}
@@ -756,7 +758,7 @@ v_plot <- "results/vp_lncap.png"
 ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
 qp
 ```
-![PCA before DESEQ ](results/pca_after.png)
+![PCA before DESEQ ](results/vp_lncap.png)
 
 Gene Set Enrichment Analysis (GSEA)
 -----------------------------------
@@ -858,7 +860,7 @@ ggsave("results/enrichment_overall_lncap.png",
 
 
 ```
-![PCA before DESEQ ](results/pca_after.png)
+![PCA before DESEQ ](results/enrichment_overall_lncap.png)
 
 ## Pathway enrichment by significant DEGs
 Pathway enrichment using ReactomePA to see which biological processes are impacted in the significant DEGs
@@ -878,7 +880,7 @@ ggsave("results/react_sig_genes_lncap.png",
        width = 8, height = 10, dpi = 300)
 
 ```
-![PCA before DESEQ ](results/pca_after.png)
+![PCA before DESEQ ](results/react_sig_genes_lncap.png)
 
 ## GSEA of Hallmark Programs 
 in order to understand broad biological responses in LNCAP cells under hypoxia
@@ -1001,9 +1003,10 @@ ggsave("results/hallmark_enrich_lncap.png",
        bg = "white",
        width = 10, height = 10, dpi = 300)
 ```
-![PCA before DESEQ ](results/pca_after.png)
+![PCA before DESEQ ](results/hallmark_enrich_lncap.png)
 
-===
+---
+
 #PC3 - Hypoxia VS Normoxia
 The variabilty of genes expression across condition for PC3 cell lime is checked
 From the dds, only LNCAP cell lines are filtered 
@@ -1072,6 +1075,7 @@ v_plot <- "results/vp_pc3.png"
 ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
 qp
 ```
+![volcano plot](results/vp_pc3.png)
 
 Gene Set Enrichment Analysis (GSEA)
 -----------------------------------
@@ -1169,6 +1173,7 @@ ggsave("results/enrichment_overall_pc3.png",
        width = 15, height = 6, dpi = 300)
 
 ```
+![volcano plot](results/enrichment_overall_pc3.png)
 
 ## Pathway enrichment by significant DEGs
 ```{r}
@@ -1183,6 +1188,7 @@ ggsave("results/react_sig_genes_pc3.png",
        bg = "white",
        width = 8, height = 10, dpi = 300)
 ```
+![volcano plot](results/react_sig_genes_pc3.png)
 
 ## GSEA of Hallmark Programs
 ```{r}
@@ -1289,6 +1295,9 @@ ggsave("results/hallmark_enrich_pc3.png",
        bg = "white",
        width = 10, height = 10, dpi = 300)
 ```
+![volcano plot](results/hallmark_enrich_pc3.png)
+---
+
 ### Session info
 ```{r}
 sink("session_info.txt")
