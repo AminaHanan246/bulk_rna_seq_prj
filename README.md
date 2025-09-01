@@ -460,20 +460,27 @@ library(dplyr)
 annotation <- fread("data/GRCh38.p14_annotation.csv",stringsAsFactors = FALSE)
 #renaming colnames
 names(annotation)[names(annotation) %in% c("Gene stable ID", "Gene type", "Gene name")] <- c("Geneid", "Genebiotype", "Genesymbol")
-head(annotation)
 annotation$Geneid <- sub("\\..*$","",annotation$Geneid)
-#matrix to dataframe
+head(annotation)
+##             Geneid    Genebiotype Genesymbol
+##             <char>         <char>     <char>
+## 1: ENSG00000210049        Mt_tRNA      MT-TF
+## 2: ENSG00000211459        Mt_rRNA    MT-RNR1
+## 3: ENSG00000210077        Mt_tRNA      MT-TV
+## 4: ENSG00000210082        Mt_rRNA    MT-RNR2
+## 5: ENSG00000209082        Mt_tRNA     MT-TL1
+## 6: ENSG00000198888 protein_coding     MT-ND1
 
+#matrix to dataframe
 raw_counts <-read.csv("data/GSE106305_counts_matrix.csv",
                      header = TRUE,
                      stringsAsFactors = FALSE)
-head(raw_counts)
 raw_counts$Geneid <- sub("\\..*$","",raw_counts$Geneid)
 
 annotated_data <- left_join(raw_counts,annotation, by = "Geneid")
 head(annotated_data)
-dim(annotated_data)
 write.csv(annotated_data, file = "data/gene_annotated_raw_counts.csv")
+
 ```
 
 Data filtering
@@ -485,7 +492,6 @@ genetypes_to_keep <- c("protein_coding", "IG_J_gene", "IG_V_gene", "IG_C_gene", 
 filtered_counts<- annotated_data[annotated_data$Genebiotype %in% genetypes_to_keep,]
 dim(filtered_counts)
 filtered_counts$Geneid <- sub("\\..*$", "", filtered_counts$Geneid)
-head(filtered_counts, n = 3)
 
 output_file <- "data/genetypes_counts_matrix.csv"
 fwrite(filtered_counts, file = output_file, sep = ",", row.names = FALSE)
@@ -501,16 +507,17 @@ print(zero_summary2)
 keep_genes <- zero_counts1 < 7
 filtered_counts_nozero <- filtered_counts[keep_genes, ]
 cat("Number of genes after filtering (zeros in <7 samples):", nrow(filtered_counts_nozero), "\n")
+## Number of genes after filtering (zeros in <7 samples): 20532
 
 new_zero_counts <- rowSums(filtered_counts_nozero[, 4:11] == 0)
-cat("New zero counts distribution:\n")
 print(table(new_zero_counts)) #check if removed successfully 
 
 output_file <- "data/genetype_nonzero_count_matrix.csv"
 fwrite(filtered_counts_nozero, file = output_file, sep = ",",row.names= FALSE)
 
-head(filtered_counts_nozero)
-dim(filtered_counts_nozero)
+## new_zero_counts
+##     0     1     2     3     4     5     6 
+## 13601   951   877   744  1018   813  2528
 ```
 
 DeseqDataSet is filtered for only the genes left in the filtered counts. A table for genes that were removed from desired genetypes was created
@@ -533,7 +540,6 @@ genetype_counts <-filtered_counts_nozero %>%
   mutate(Proportion = n/sum(n),
          Percentage = Proportion * 100) %>%
   rename(Biotype = Genebiotype)
-dim(genetype_counts)
 
 #Barplot
 p <- ggplot(genetype_counts, aes(x = reorder(Biotype, -Proportion), y = Proportion, fill = Biotype)) +
@@ -582,7 +588,25 @@ DESeq - for differential expressed genes
 ----------------------------------------
 ```{r}
 dds <- DESeq(dds_filtered)
+## estimating size factors
+## estimating dispersions
+## gene-wise dispersion estimates
+## mean-dispersion relationship
+## final dispersion estimates
+## fitting model and testing
+
 dds
+## class: DESeqDataSet 
+## dim: 20532 8 
+## metadata(1): version
+## assays(4): counts mu H cooks
+## rownames(20532): ENSG00000000003 ENSG00000000005 ...
+##   ENSG00000310562 ENSG00000310576
+## rowData names(30): baseMean baseVar ... deviance maxCooks
+## colnames(8): LNCAP_Hypoxia_S1 LNCAP_Hypoxia_S2 ... PC3_Normoxia_S1
+##   PC3_Normoxia_S2
+## colData names(2): condition sizeFactor
+
 normalized_counts <- counts(dds, normalized = T)
 normalized_counts_df <- as.data.frame(normalized_counts)
 write.csv(normalized_counts_df, file = "data/normalized_counts.csv", row.names = TRUE)
@@ -666,8 +690,8 @@ variable_gene_heatmap(vsd, num_genes = 40, annotation = annotation)
 ```
 ![PCA before DESEQ ](results/variable_gene_heatmap.png)
 
-Density plots
--------------
+Density plots- Raw vs VST-transformed data
+------------------------------------------
 Plotted density curves for raw and VST-transformed counts across all samples to check how well variance was stabilized. This helps confirm that expression distributions are more comparable post-transformation using VST.
 ```{r}
 raw_counts <- assay(dds)
@@ -699,7 +723,9 @@ for (i in 1:8) {
 }
 dev.off()
 ```
-![PCA before DESEQ ](results/density_plots_raw_vst.png)
+![Figure: Density plots of raw vs. VST-transformed expression values](results/density_plots_raw_vst.png)
+> **Figure: Density plots of raw vs. VST-transformed expression values**
+> The plots indicate that raw expression values have a highly skewed distribution, with particularly high variance in low-count regions. This variability makes raw data difficult to compare across samples. After applying Variance Stabilizing Transformation (VST), the distributions become more symmetric and bell-shaped, with variance stabilized across the range of expression values. This transformation enhances comparability between samples and prepares the data for downstream statistical analysis.
 
 Gene expression profile - IGFBP1
 --------------------------------
