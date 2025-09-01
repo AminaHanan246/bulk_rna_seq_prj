@@ -363,9 +363,13 @@ The count matrix created is load and column are sample-wise
 ```{r}
 #Loading counts after running featureCounts
 raw_counts <- read.csv("data/GSE106305_counts_matrix.csv", header = TRUE, row.names = "Geneid", stringsAsFactors = FALSE)
-head(raw_counts)
 raw_counts <- raw_counts[,sort(colnames(raw_counts))]
+head(raw_counts)
 colSums(raw_counts)
+## LNCAP_Hypoxia_S1  LNCAP_Hypoxia_S2 LNCAP_Normoxia_S1 LNCAP_Normoxia_S2 
+##         35704156          40621142          38248072          46410350 
+##   PC3_Hypoxia_S1    PC3_Hypoxia_S2   PC3_Normoxia_S1   PC3_Normoxia_S2 
+##         36884023          12629194          12917476          38077829
 ```
 The metadata is created where the condition for each sample is stored
 ```{r}
@@ -375,7 +379,15 @@ print(condition)
 
 my_colData <- as.data.frame(condition)
 rownames(my_colData) <- colnames(raw_counts)
+head(my_colData)
 write.csv(my_colData,file = "data/metadata.csv")
+##                        condition
+## LNCAP_Hypoxia_S1   LNCAP_Hypoxia
+## LNCAP_Hypoxia_S2   LNCAP_Hypoxia
+## LNCAP_Normoxia_S1 LNCAP_Normoxia
+## LNCAP_Normoxia_S2 LNCAP_Normoxia
+## PC3_Hypoxia_S1       PC3_Hypoxia
+## PC3_Hypoxia_S2       PC3_Hypoxia
 ```
 
 Creating DESeq Object
@@ -388,16 +400,54 @@ dds <- DESeqDataSetFromMatrix(countData = raw_counts,
                               design = ~condition)
 dds
 head(counts(dds))
+
+## class: DESeqDataSet 
+## dim: 78894 8 
+## metadata(1): version
+## assays(1): counts
+## rownames(78894): ENSG00000000003 ENSG00000000005 ...
+##   ENSG00000310576 ENSG00000310577
+## rowData names(0):
+## colnames(8): LNCAP_Hypoxia_S1 LNCAP_Hypoxia_S2 ... PC3_Normoxia_S1
+##   PC3_Normoxia_S2
+## colData names(1): condition
+
+##                 LNCAP_Hypoxia_S1 LNCAP_Hypoxia_S2 LNCAP_Normoxia_S1
+## ENSG00000000003              604              691               367
+## ENSG00000000005                0                0                 0
+## ENSG00000000419             1995             2302              2160
+## ENSG00000000457              554              607               433
+## ENSG00000000460              275              350               379
+## ENSG00000000938                2                2                 2
+##                 LNCAP_Normoxia_S2 PC3_Hypoxia_S1 PC3_Hypoxia_S2
+## ENSG00000000003               380           1059            332
+## ENSG00000000005                 0              0              0
+## ENSG00000000419              2454           1974            693
+## ENSG00000000457               518             88             26
+## ENSG00000000460               349            390            155
+## ENSG00000000938                 1              0              0
+##                 PC3_Normoxia_S1 PC3_Normoxia_S2
+## ENSG00000000003             352             971
+## ENSG00000000005               0               0
+## ENSG00000000419             747            1761
+## ENSG00000000457              29              83
+## ENSG00000000460             189             438
+## ENSG00000000938               0               1
 ```
 
 Genes with no gene expression across samples are checked. The table contains info in number of genes that have zero expression at different number of samples. 
 ```{r}
 count_matrix <- counts(dds)
-dim(count_matrix)
 zero_counts_per_gene <- rowSums(count_matrix == 0)
 count_matrix <- as.data.frame(count_matrix)
 zero_summary <- table(zero_counts_per_gene)
 print(zero_summary) #number of genes with diff. number of zero gene expression in samples
+
+## zero_counts_per_gene
+##     0     1     2     3     4     5     6     7 
+## 19522  3391  2972  3281  5019  3858  4632  7435 
+##     8 
+## 28784 
 ```
 
 Ensemble IDs to gene symbols using BioMart
