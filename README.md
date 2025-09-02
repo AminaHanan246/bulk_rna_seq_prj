@@ -531,7 +531,7 @@ removed_genes <- filtered_counts[!keep_genes, ]
 cat("Biotype distribution of removed genes:\n")
 print(table(removed_genes$Genebiotype)) 
 ```
-The proportion of biotypes left is visualised after filtering. 
+The distribution of biotypes in filtered data. 
 ```{r}
 library(ggplot2)
 
@@ -553,14 +553,16 @@ p <- ggplot(genetype_counts, aes(x = reorder(Biotype, -Proportion), y = Proporti
         legend.position = "none") +  # Remove legend if biotypes are clear
   scale_fill_brewer(palette = "Set2")  # Use distinct colors
 p
-output_plot <- "results/genebiotype_proportions1.png"
+output_plot <- "results/genebiotype_proportions.png"
 ggsave(output_plot, plot = p, width = 8, height = 6, dpi = 300)
 ```
-![Amount of protein coding anf other in](results/genebiotype_proportions1.png)
+![distribution of biotypes in filtered data](results/genebiotype_proportions.png)
+> **Figure: Distribution of biotypes in filtered data: **
+> The plots shows most of the dataset contains protein coding genes, with other biotpes such as immunogloblins and T-cell receptors in negligible proportions.
 
 PCA plot before DESeq
 ---------------------
-PCA clusters samples with similar gene expression before Deseq. The variable stabilising transformation is deals with genes that are highly expressed in small datasets.The plot helps us to visualise variance structure and potential batch effect
+PCA clusters samples with similar gene expression. The variable stabilising transformation is deals with genes that are highly expressed in small datasets. The plot helps us to visualise variance structure and potential batch effect.
 ```{r}
 #Stabilising variance across genes in sample
 vsd <- vst(dds_filtered , blind = TRUE)
@@ -583,6 +585,8 @@ dev.off()
 plot_PCA(vsd)
 ```
 ![PCA before DESEQ ](results/pca_before.png)
+> **Figure: PCA before DESeq: **
+> PCA shows the potential batch effect and the variance structure in the dataset. Here the clustering is seen to be based on biological difference along PC1, which acconts for the most difference.
 
 DESeq - for differential expressed genes
 ----------------------------------------
@@ -636,7 +640,9 @@ plot_PCA(vsd)
 dev.off()
 plot_PCA(vsd)
 ```
-![PCA before DESEQ ](results/pca_after.png)
+![PCA after DESEQ ](results/pca_after.png)
+> **Figure: PCA after DESeq: **
+> PCA shows the variance structure after removal of batch effect in the dataset. Here the clustering is seen to be similar to PCA plot before DESEQ which indicates minimal batch effect.
 
 ## Distance plot 
 The plot calculates Euclidean distance based on the expression values of genes in order to check how similar the expression profiles are across conditions. This helps spot outliers and confirms that replicates cluster as expected.
@@ -660,7 +666,9 @@ plotDists(vsd)
 dev.off()
 plotDists(vsd)
 ```
-![PCA before DESEQ ](results/sampleheatmap1.png)
+![Clustering of samples based on cell line and oxygen condition](results/sampleheatmap1.png)
+> **Figure: Clustered Heatmap of Gene Expression: **
+> The heatap show disctint clustering across samples based on cell lines and oxygen conditions. This indicates that experiment was successfull
 
 Variable genes HeatMap
 ----------------------
@@ -688,7 +696,9 @@ dev.off()
 variable_gene_heatmap(vsd, num_genes = 40, annotation = annotation)
 
 ```
-![PCA before DESEQ ](results/variable_gene_heatmap.png)
+![Variable genes HeatMap](results/variable_gene_heatmap.png)
+> **Figure: Clustered Heatmap of Gene Expression: **
+> The heatap show distinct clustering across samples based on cell lines and oxygen conditions. This indicates that experiment was successfull
 
 Density plots- Raw vs VST-transformed data
 ------------------------------------------
@@ -724,7 +734,7 @@ for (i in 1:8) {
 dev.off()
 ```
 ![Figure: Density plots of raw vs. VST-transformed expression values](results/density_plots_raw_vst.png)
-> **Figure: Density plots of raw vs. VST-transformed expression values**
+> **Figure: Density plots of raw vs. VST-transformed expression values: **
 > The plots indicate that raw expression values have a highly skewed distribution, with particularly high variance in low-count regions. This variability makes raw data difficult to compare across samples. After applying Variance Stabilizing Transformation (VST), the distributions become more symmetric and bell-shaped, with variance stabilized across the range of expression values. This transformation enhances comparability between samples and prepares the data for downstream statistical analysis.
 
 Gene expression profile - IGFBP1
