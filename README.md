@@ -585,7 +585,7 @@ dev.off()
 plot_PCA(vsd)
 ```
 ![PCA before DESEQ ](results/pca_before.png)
-> **Figure: PCA before DESeq: **
+> **F igure: PCA before DESeq: **
 > PCA shows the potential batch effect and the variance structure in the dataset. Here the clustering is seen to be based on biological difference along PC1, which acconts for the most difference.
 
 DESeq - for differential expressed genes
@@ -641,7 +641,7 @@ dev.off()
 plot_PCA(vsd)
 ```
 ![PCA after DESEQ ](results/pca_after.png)
-> **Figure: PCA after DESeq: **
+> ** Figure: PCA after DESeq: **
 > PCA shows the variance structure after removal of batch effect in the dataset. Here the clustering is seen to be similar to PCA plot before DESEQ which indicates minimal batch effect.
 
 ## Distance plot 
@@ -667,7 +667,7 @@ dev.off()
 plotDists(vsd)
 ```
 ![Clustering of samples based on cell line and oxygen condition](results/sampleheatmap1.png)
-> **Figure: Clustered Heatmap of Gene Expression: **
+> ** Figure: Clustered Heatmap of Gene Expression: **
 > The heatap show disctint clustering across samples based on cell lines and oxygen conditions. This indicates that experiment was successfull
 
 Variable genes HeatMap
@@ -697,8 +697,8 @@ variable_gene_heatmap(vsd, num_genes = 40, annotation = annotation)
 
 ```
 ![Variable genes HeatMap](results/variable_gene_heatmap.png)
-> **Figure: Clustered Heatmap of Gene Expression: **
-> The heatap show distinct clustering across samples based on cell lines and oxygen conditions. This indicates that experiment was successfull
+> ** Figure: Clustered Heatmap of Gene Expression: **
+> The heatap visualizes gene expression levels across samples under hypoxia and normoxia in LNCaP and PC3 cell lines. The blue-to-red gradient reflects low to high expression, respectively. Hierarchical clustering reveals  sample clusters based on variability in gene expressions, highlighting transcriptional differences due to both oxygen condition and cell type.
 
 Density plots- Raw vs VST-transformed data
 ------------------------------------------
@@ -734,7 +734,7 @@ for (i in 1:8) {
 dev.off()
 ```
 ![Figure: Density plots of raw vs. VST-transformed expression values](results/density_plots_raw_vst.png)
-> **Figure: Density plots of raw vs. VST-transformed expression values: **
+> ** Figure: Density plots of raw vs. VST-transformed expression values: **
 > The plots indicate that raw expression values have a highly skewed distribution, with particularly high variance in low-count regions. This variability makes raw data difficult to compare across samples. After applying Variance Stabilizing Transformation (VST), the distributions become more symmetric and bell-shaped, with variance stabilized across the range of expression values. This transformation enhances comparability between samples and prepares the data for downstream statistical analysis.
 
 Gene expression profile - IGFBP1
@@ -774,7 +774,9 @@ plot_counts <- function (dds, gene, normalization = "DESeq2"){
 gene_plot<-plot_counts(dds, "IGFBP1")
 ggsave(filename ="results/IGFBP1_cond.png" , plot = gene_plot,bg = "white", width = 8, height = 6, dpi = 300)
 ```
-![PCA before DESEQ ](results/IGFBP1_cond.png)
+![Normalized expression of IGFBP1 across conditions ](results/IGFBP1_cond.png)
+> ** Figure: Normalized expression of IGFBP1 across conditions: **
+> This boxplot shows the DESeq2-normalized expression of IGFBP1 (ENSG00000146678) across sample conditions. Higher expression in seen in PC3 cell lines when compared to low levels in LNCAP cell. Among PC3 cells,  higher levels of expression is seem in low oxygen condition. These patterns suggest that IGFBP1 is upregulated under hypoxia in PC3 cells, highlighting a potential cell line–specific response to oxygen stress.
 
 ---
 
@@ -807,7 +809,7 @@ plotMA(reslncapOrdered,ylim=c(-2,2))
 ```
 Volcano plot - gene regulation
 -------------------------------
-The gene regulation across condition is varied in LNCAP cell lines, based on which volcano plot is created. Genes were categorized as upregulated, downregulated, or not significant based on fold change and adjusted p-value.
+The volcano plot shows the gene regulation under hypoxia condition in LNCAP cell lines. Genes were categorized as significant with p-adj < 0.05, and upregulated or downregulated based on fold change. 
 ```{r}
 #install.packages("ggplot2")
 library(ggplot2)
@@ -844,7 +846,11 @@ v_plot <- "results/vp_lncap.png"
 ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
 qp
 ```
-![PCA before DESEQ ](results/vp_lncap.png)
+![Volcano plot of differential gene expression in LNCAP ](results/vp_lncap.png)
+> ** Figure:  Volcano plot of differential gene expression in LNCAP: ** 
+> The volcano plot displays the results of differential expression analysis, with log₂ fold change on the x-axis and –log₁₀ adjusted p-value on the y-axis. Genes with p-adj < 0.05, are grouped as upregulated (log₂ fold change > 1)are shown in orange, downregulated (log₂ fold change < 1) in purple, and non-significant (p-adj > 0.05) in grey. Under the oxygen stress condition, more genes are upregulated than downregulated, indicating increased transcriptional expression.
+
+
 
 Gene Set Enrichment Analysis (GSEA)
 -----------------------------------
