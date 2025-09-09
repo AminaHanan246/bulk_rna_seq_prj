@@ -2,7 +2,8 @@
 
 This repository contains a complete workflow for bulk RNA-seq analysis, from raw sequence data to differential gene expression and pathway enrichment analysis. The project demonstrates RNA-seq preprocessing, quality control, alignment, quantification, differential expression, and Gene Set Enrichment Analysis (GSEA) using R, Python, and standard bioinformatics tools.
 
-_This pipeline was inspired by Erick Lu’s Bulk RNA-seq tutorial (2020). The current project adapts the workflow using HISAT2, featureCounts, and additional QC/filtering steps to create a reproducible RNA-seq analysis pipeline_
+*This pipeline was inspired by Erick Lu’s Bulk RNA-seq tutorial (2020). The current project adapts the workflow using HISAT2, featureCounts, and additional QC/filtering steps to create a reproducible RNA-seq analysis pipeline*
+
 ---
 
 ## Project Overview
@@ -207,8 +208,11 @@ Mapping reads using HISAT2
 The raw sequence reads obtained in FASTQ format are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA, and the number of times a read is mapped to a specific gene indicates whether the gene expression was high or low.
 
 <details>
-  <summary> Principle of Bulk RNA-seq Mapping </summary>
+  <summary><strong>Principle of Bulk RNA-seq Mapping </strong></summary>
+    
 To perform bulk-RNA sequence analysis,  sequencing library needs to be prepared. The mRNA transcripts from cells are reverse transcribed into cDNA, fragmented and are attached with specialised adapter sequences in both ends. The adaptor act as priming site for sequencing and include sample-specific barcodes, allowing multiple libraries to be pooled and sequenced together. Finally, the prepared library is loaded onto a sequencing instrument, such as an Illumina sequencer, which reads millions of fragments in parallel and outputs the results in the form of FASTQ files. Each FASTQ file contains both the nucleotide sequence and a corresponding quality score for every base, providing the raw input required for downstream alignment and expression analysis.
+
+
 ```bash
 zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
 
@@ -221,7 +225,7 @@ AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
  2. Read sequence
  3. Separator line(starts with +)
  4. Quality score of each base (based on ASCII)
-</details>```
+</details>
 
 ### Mapping reads
 The pre-built genome index, required for mapping, is downloaded using the `wget` command and is extracted using `tar -xvzf` command:
@@ -242,7 +246,10 @@ hisat2 -p 8 -x GRCh38_index -U LNCAP_Normoxia_S1_R1_001.fastq.gz -S LNCAP_Normox
 > [!NOTE] 
 > STAR aligner provides more accurate and sensitive mapping; however, HISAT2 is used here because it uses less memory and is significantly faster
 
+<details>
+    <summary><strong>BAM file format</strong></summary>
 The output BAM file consists of 11 fields for alignment information: 
+
 ```bash
 samtools view LNCAP_Normoxia_S2.bam | head -n 1
 
@@ -260,6 +267,7 @@ SRR7179504.1361607.1    272     1       14277   0       76M     *0       0      
   10. SEQ - Read Sequence
   11. QUAL - Phred quality
  and TAG - TAG information (AS - alignment score, NH - number of reported alignments 
+</details>
 
 Sorting and Indexing BAM Files using SAMtool
 --------------------------------------------
