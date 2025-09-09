@@ -1,7 +1,7 @@
 # Bulk RNA-Seq Analysis Project with GSEA
 
 This repository contains a complete workflow for bulk RNA-seq analysis, from raw sequence data to differential gene expression and pathway enrichment analysis. The project demonstrates RNA-seq preprocessing, quality control, alignment, quantification, differential expression, and Gene Set Enrichment Analysis (GSEA) using R, Python, and standard bioinformatics tools.
-
+*This pipeline was inspired by Erick Lu’s Bulk RNA-seq tutorial (2020). The current project adapts the workflow using HISAT2, featureCounts, and additional QC/filtering steps to create a reproducible RNA-seq analysis pipeline*
 ---
 
 ## Project Overview
@@ -205,7 +205,8 @@ Mapping reads using HISAT2
 ---------------------------
 The raw sequence reads obtained in FASTQ format are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA, and the number of times a read is mapped to a specific gene indicates whether the gene expression was high or low.
 
-### Principle of Bulk RNA-seq Mapping
+<details>
+  <summary> Principle of Bulk RNA-seq Mapping </summary>
 To perform bulk-RNA sequence analysis,  sequencing library needs to be prepared. The mRNA transcripts from cells are reverse transcribed into cDNA, fragmented and are attached with specialised adapter sequences in both ends. The adaptor act as priming site for sequencing and include sample-specific barcodes, allowing multiple libraries to be pooled and sequenced together. Finally, the prepared library is loaded onto a sequencing instrument, such as an Illumina sequencer, which reads millions of fragments in parallel and outputs the results in the form of FASTQ files. Each FASTQ file contains both the nucleotide sequence and a corresponding quality score for every base, providing the raw input required for downstream alignment and expression analysis.
 ```bash
 zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
@@ -219,6 +220,7 @@ AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
  2. Read sequence
  3. Separator line(starts with +)
  4. Quality score of each base (based on ASCII)
+</details>
 
 ### Mapping reads
 The pre-built genome index, required for mapping, is downloaded using the `wget` command and is extracted using `tar -xvzf` command:
@@ -525,6 +527,8 @@ fwrite(filtered_counts_nozero, file = output_file, sep = ",",row.names= FALSE)
 ##     0     1     2     3     4     5     6 
 ## 13601   951   877   744  1018   813  2528
 ```
+> [!NOTE] 
+> Genes with zero expression in all but one sample might be a outlier and is removed to reduce technical noise. 
 
 DeseqDataSet is filtered for only the genes left in the filtered counts. A table for genes that were removed from desired genetypes was created
 ```{r}
@@ -563,7 +567,7 @@ output_plot <- "results/genebiotype_proportions.png"
 ggsave(output_plot, plot = p, width = 8, height = 6, dpi = 300)
 ```
 ![distribution of biotypes in filtered data](results/genebiotype_proportions.png)
-> **Figure: Distribution of biotypes in filtered data: **
+> **Figure: Distribution of biotypes in filtered data:**
 > The plots shows most of the dataset contains protein coding genes, with other biotpes such as immunogloblins and T-cell receptors in negligible proportions.
 
 PCA plot before DESeq
@@ -591,7 +595,7 @@ dev.off()
 plot_PCA(vsd)
 ```
 ![PCA before DESEQ ](results/pca_before.png)
-> **F igure: PCA before DESeq: **
+> **Figure: PCA before DESeq:**
 > PCA shows the potential batch effect and the variance structure in the dataset. Here the clustering is seen to be based on biological difference along PC1, which acconts for the most difference.
 
 DESeq - for differential expressed genes
@@ -647,7 +651,7 @@ dev.off()
 plot_PCA(vsd)
 ```
 ![PCA after DESEQ ](results/pca_after.png)
-> ** Figure: PCA after DESeq: **
+> **Figure: PCA after DESeq:**
 > PCA shows the variance structure after removal of batch effect in the dataset. Here the clustering is seen to be similar to PCA plot before DESEQ which indicates minimal batch effect.
 
 ## Distance plot 
@@ -674,7 +678,7 @@ plotDists(vsd)
 ```
 ![Clustering of samples based on cell line and oxygen condition](results/sampleheatmap1.png)
 > **Figure: Clustered Heatmap of Gene Expression:**
-> The heatap show disctint clustering across samples based on cell lines and oxygen conditions. This indicates that experiment was successfull
+> The heatap show distinct clustering across samples based on cell lines and oxygen conditions. This indicates that experiment was successfull
 
 Variable genes HeatMap
 ----------------------
@@ -786,7 +790,7 @@ ggsave(filename ="results/IGFBP1_cond.png" , plot = gene_plot,bg = "white", widt
 
 ---
 
-#LNCAP - Hypoxia VS Normoxia
+# LNCAP - Hypoxia VS Normoxia
 
 The LNCAP sampled were filtered from dataset, to compare hypoxia vs normoxia. Normoxia is set as reference and DESeq2 was ran. The genes are ordered based on adjusted p-values
 ```{r}
@@ -924,7 +928,7 @@ write.csv(top20, "data/top20_pathways.csv", row.names = FALSE)
 ```
 
 ## Pathway enrichment based on overall expression profile
-Plotted the top Reactome pathways from GSEA using NES, FDR, and gene set size to show which biological processes are most enriched
+Plotted the top Reactome pathways from GSEA using NES, FDR, and gene set size to show which biological processes are most enriched. The pathways maybe downregulated or upregulated
 ```{r}
 library(ggplot2)
 
@@ -958,9 +962,11 @@ ggsave("results/enrichment_overall_lncap.png",
 
 ```
 ![Pathways enriched in LNCAP ](results/enrichment_overall_lncap.png)
+> **Figure: Top enriched pathways in LNCAP:**
+> The plot shows top enriched pathway based on normalised enrichment scores(NES). The NES values are negative, indicating significant downregulation in these pathway during low oxygen stress. The dot size reflects number of genes involved and dot color indicates statistical significance based on FDR-adjusted p-vlaue.The supressed pathway include transalation, ribosomal RNA processing and protein synthesis-related pathway along with nonsense-mediated deacy and selenometabolism indicating reduction in energy-intensive protein production and RNA turnover. 
 
 ## Pathway enrichment by significant DEGs
-Pathway enrichment using ReactomePA to see which biological processes are impacted in the significant DEGs
+Pathway enrichment using ReactomePA to see which biological processes are impacted by the significant and differentially expressed genes. The gene-ratio is based on the number of DEGs in total number of genes involved while the dot size indicate the absolute number of DEGs involved
 ```{r}
 library(ReactomePA)
 # Filter DEGs: padj < 0.1 and |log2FC| > 0.5, then extract ENTREZ IDs
@@ -978,6 +984,8 @@ ggsave("results/react_sig_genes_lncap.png",
 
 ```
 ![Pathways enriched by diferentially expressed genes in LNCAP ](results/react_sig_genes_lncap.png)
+> **Figure: Pathways enriched by significant genes in LNCAP:**
+> The dot plot shows enriched pathways ranked by significant differentially expressed genes. The gene-ratio is based on the percentage on DEGs involved in pathway. The dot size reflects number of genes involved and dot color indicates statistical significance based on FDR-adjusted p-vlaue. Enriched pathways include metabolism of amino acids, transalation, respiratory electron transport and stress responses
 
 ## GSEA of Hallmark Programs 
 in order to understand broad biological responses in LNCAP cells under hypoxia
@@ -1077,7 +1085,7 @@ head(fgsea_results_ordered[, .(pathway, padj, NES)])
 ```
 
 ## Hallmark GSEA – LNCaP Hypoxia Response
-The plot to show which Hallmark programs are enriched in LNCaP cells under hypoxia. Pathways are sorted by NES, and bars are colored by significance (padj < 0.05).
+The plot to show which Hallmark programs are enriched in LNCaP cells under hypoxia. Pathways are sorted by NES, and bars are blue colored by significance (padj < 0.05).
 
 ```{r}
 #install.packages("waterfalls")
@@ -1101,12 +1109,13 @@ ggsave("results/hallmark_enrich_lncap.png",
        width = 10, height = 10, dpi = 300)
 ```
 ![Cell programs enriched in LNCAP ](results/hallmark_enrich_lncap.png)
-
+> **Figure: Hallmark pathway enrichment analysis in LNCaP cells under hypoxia:**
+Bar plot of normalized enrichment scores (NES) showing pathways significantly altered under hypoxia. The blue bars indiactes the significantly enriched pathway with padj-values<0.05  Pathways such as glycolysis, angiogenesis, EMT, and TGF-beta signaling were significantly upregulated, support tumor survival and progression in low-oxygen environments. In contrast, oxidative phosphorylation, interferon responses, and inflammatory pathways were significantly downregulated, indicating suppression of anti-tumor immune activity and a metabolic shift away from mitochondrial respiration.
 ---
 
-#PC3 - Hypoxia VS Normoxia
+# PC3 - Hypoxia VS Normoxia
 
-The variabilty of genes expression across condition for PC3 cell lime is checked
+The variabilty of genes expression across condition for PC3 cell line is checked
 From the dds, only LNCAP cell lines are filtered 
 ```{r}
 # Filter the DESeq2 dataset (dds) to keep only LNCAP samples
@@ -1362,7 +1371,7 @@ pc3_ranked_list <- prepare_ranked_list(pc3_ranked_list)
 print(head(pc3_ranked_list))
 ```
 
-Run GSEA using Hallmark gene sets and ranked LNCaP gene list
+Run GSEA using Hallmark gene sets and ranked PC3 gene list
 ```{r}
 fgsea_results <- fgsea(pathways = hallmark_pathway,
                   stats = pc3_ranked_list,
