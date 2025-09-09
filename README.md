@@ -63,22 +63,29 @@ conda activate preprocess
 ---
 ## Pre-processing Pipeline
 
-The dataset was produced as part of the research [Guo et al., Nature Communications 2019](https://www.ncbi.nlm.nih.gov/pubmed/30655535). The raw sequencing data are obtained via Gene Expression Omnibus (GEO) using the accession number provided in the publication: GSE106305. The corresponding webpage contains information regarding the sequencing data for each sample in the study. 
-The objective was to find the differentially expressed under conditions of normoxia, normal oxygen condition of typically 21% O2, and hypoxia, low oxygen condition of typically 1-5% O2, for cell lines LNCAP and PC3. For this, the control samples (Empty\_Vector for LNCaP and siCtrl for PC3) were selected. The samples to be downloaded and associated SRA accession numbers are in the table below:
-| Sample Name                                   | GSM Identifier | SRA Identifier (SRX) | SRA Runs (SRR, download these)                     |
-|-----------------------------------------------|----------------|----------------------|----------------------------------------------------|
-| LNCaP\_RNA-Seq\_Empty\_Vector\_Normoxia\_rep1 | GSM3145509     | SRX4096735           | SRR7179504  SRR7179505  SRR7179506  SRR7179507 |
-| LNCaP\_RNA-Seq\_Empty\_Vector\_Normoxia\_rep2 | GSM3145510     | SRX4096736           | SRR7179508  SRR7179509  SRR7179510  SRR7179511 |
-| LNCaP\_RNA-Seq\_Empty\_Vector\_Hypoxia\_rep1  | GSM3145513     | SRX4096739           | SRR7179520  SRR7179521  SRR7179522  SRR7179523 |
-| LNCaP\_RNA-Seq\_Empty\_Vector\_Hypoxia\_rep2  | GSM3145514     | SRX4096740           | SRR7179524  SRR7179525  SRR7179526  SRR7179527 |
-| PC3\_RNA-Seq\_siCtrl\_Normoxia\_rep1          | GSM3145517     | SRX4096743           | SRR7179536                                         |
-| PC3\_RNA-Seq\_siCtrl\_Normoxia\_rep2          | GSM3145518     | SRX4096744           | SRR7179537                                         |
-| PC3\_RNA-Seq\_siCtrl\_Hypoxia\_rep1           | GSM3145521     | SRX4096747           | SRR7179540                                         |
-| PC3\_RNA-Seq\_siCtrl\_Hypoxia\_rep2           | GSM3145522     | SRX4096748           | SRR7179541                                         |
+The dataset was obtained from Gene Expression Omnibus (GEO) under the accession ID GSE106305 and produced as part of the research [Guo et al., Nature Communications 2019](https://www.ncbi.nlm.nih.gov/pubmed/30655535). The dataset provides transcriptomic profiles for two prostate cancer cell lines, LNCaP and PC3, cultured under standard oxygen levels (normoxia, ~21% O₂) and reduced oxygen levels (hypoxia, ~1–5% O₂).
+The objective was to find the differentially expressed under conditions defined as Empty Vector (LNCaP) and siCtrl (PC3). Each condition contains two biological replicates with raw sequence reads available in the Sequence Read Archive (SRA). 
+### LNCAP (Empty Vector) Metadata
+
+| Condition            | Replicate              | GEO Identifier | SRA Identifier (SRX) | SRA Runs                                       |
+|----------------------|------------------------|----------------|----------------------|------------------------------------------------|
+| Normoxia             | 1                      | GSM3145509     | SRX4096735           | SRR7179504  SRR7179505  SRR7179506  SRR7179507 |
+| Normoxia             | 2                      | GSM3145510     | SRX4096736           | SRR7179508  SRR7179509  SRR7179510  SRR7179511 |
+| Hypooxia             | 1                      | GSM3145513     | SRX4096739           | SRR7179520  SRR7179521  SRR7179522  SRR7179523 |
+| Hypooxia             | 2                      | GSM3145514     | SRX4096740           | SRR7179524  SRR7179525  SRR7179526  SRR7179527 |
+
+### PC3 (SiCtrl) Metadata
+
+| Condition            | Replicate              | GEO Identifier | SRA Identifier (SRX) | SRA Runs                                       |
+|----------------------|------------------------|----------------|----------------------|------------------------------------------------|
+| Normoxia             | 1                      | GSM3145517     | SRX4096743           | SRR7179536                                     |
+| Normoxia             | 2                      | GSM3145518     | SRX4096744           | SRR7179537                                     |
+| Hypooxia             | 1                      | GSM3145521     | SRX4096747           | SRR7179540                                     |
+| Hypooxia             | 2                      | GSM3145522     | SRX4096748           | SRR7179541                                     |
 
 Download FASTQ files using SRA tools
 ------------------------------------
-The sequencing data is stored in the NCBI database in the form of SRA files, which can be downloaded using NCBI’s SRA toolkit. The `prefetch` command downloads the SRA files based on the specified SRA accession number. 
+Raw reads are deposited as SRA files and can be retrieved using the NCBI SRA Toolkit. The `prefetch` command enables downloading by providing the relevant SRA accession number (SRR). After download, `fastq-dump` may be used to convert SRA files into FASTQ format for downstream quality control and alignment.
 ```bash
 prefetch SRR7179504
 
@@ -196,10 +203,10 @@ mv SRR7179541_pass.fastq.gz PC3_Hypoxia_S2.fastq.gz
 
 Mapping reads using HISAT2
 ---------------------------
-The reads from FASTQ file are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA, and the number of times a read is mapped to a specific gene indicates whether the gene expression was high or low.
+The raw sequence reads obtained in FASTQ format are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA, and the number of times a read is mapped to a specific gene indicates whether the gene expression was high or low.
 
-### Concept behind mapping
-To perform bulk-RNA sequence analysis,  library is created. The mRNA transcripts from cells are reverse transcribed into cDNA, fragmented and are attached with adapter sequences in both ends and this created the library. The sequencer reads the fragments and stores the sequence in FASTQ files. The FASTQ file consists of 4-line chunks, as shown
+### Principle of Bulk RNA-seq Mapping
+To perform bulk-RNA sequence analysis,  sequencing library needs to be prepared. The mRNA transcripts from cells are reverse transcribed into cDNA, fragmented and are attached with specialised adapter sequences in both ends. The adaptor act as priming site for sequencing and include sample-specific barcodes, allowing multiple libraries to be pooled and sequenced together. Finally, the prepared library is loaded onto a sequencing instrument, such as an Illumina sequencer, which reads millions of fragments in parallel and outputs the results in the form of FASTQ files. Each FASTQ file contains both the nucleotide sequence and a corresponding quality score for every base, providing the raw input required for downstream alignment and expression analysis.
 ```bash
 zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
 
@@ -355,7 +362,6 @@ BiocManager::install("DESEQ2")
 BiocManager::install("ReactomePA")
 
 ```
-
 
 Loading count data and meta data
 --------------------------------
@@ -667,7 +673,7 @@ dev.off()
 plotDists(vsd)
 ```
 ![Clustering of samples based on cell line and oxygen condition](results/sampleheatmap1.png)
-> ** Figure: Clustered Heatmap of Gene Expression: **
+> **Figure: Clustered Heatmap of Gene Expression:**
 > The heatap show disctint clustering across samples based on cell lines and oxygen conditions. This indicates that experiment was successfull
 
 Variable genes HeatMap
@@ -697,7 +703,7 @@ variable_gene_heatmap(vsd, num_genes = 40, annotation = annotation)
 
 ```
 ![Variable genes HeatMap](results/variable_gene_heatmap.png)
-> ** Figure: Clustered Heatmap of Gene Expression: **
+> **Figure: Clustered Heatmap of Gene Expression:**
 > The heatap visualizes gene expression levels across samples under hypoxia and normoxia in LNCaP and PC3 cell lines. The blue-to-red gradient reflects low to high expression, respectively. Hierarchical clustering reveals  sample clusters based on variability in gene expressions, highlighting transcriptional differences due to both oxygen condition and cell type.
 
 Density plots- Raw vs VST-transformed data
@@ -734,7 +740,7 @@ for (i in 1:8) {
 dev.off()
 ```
 ![Figure: Density plots of raw vs. VST-transformed expression values](results/density_plots_raw_vst.png)
-> ** Figure: Density plots of raw vs. VST-transformed expression values: **
+> **Figure: Density plots of raw vs. VST-transformed expression values:**
 > The plots indicate that raw expression values have a highly skewed distribution, with particularly high variance in low-count regions. This variability makes raw data difficult to compare across samples. After applying Variance Stabilizing Transformation (VST), the distributions become more symmetric and bell-shaped, with variance stabilized across the range of expression values. This transformation enhances comparability between samples and prepares the data for downstream statistical analysis.
 
 Gene expression profile - IGFBP1
@@ -775,12 +781,13 @@ gene_plot<-plot_counts(dds, "IGFBP1")
 ggsave(filename ="results/IGFBP1_cond.png" , plot = gene_plot,bg = "white", width = 8, height = 6, dpi = 300)
 ```
 ![Normalized expression of IGFBP1 across conditions ](results/IGFBP1_cond.png)
-> ** Figure: Normalized expression of IGFBP1 across conditions: **
+> **Figure: Normalized expression of IGFBP1 across conditions:**
 > This boxplot shows the DESeq2-normalized expression of IGFBP1 (ENSG00000146678) across sample conditions. Higher expression in seen in PC3 cell lines when compared to low levels in LNCAP cell. Among PC3 cells,  higher levels of expression is seem in low oxygen condition. These patterns suggest that IGFBP1 is upregulated under hypoxia in PC3 cells, highlighting a potential cell line–specific response to oxygen stress.
 
 ---
 
 #LNCAP - Hypoxia VS Normoxia
+
 The LNCAP sampled were filtered from dataset, to compare hypoxia vs normoxia. Normoxia is set as reference and DESeq2 was ran. The genes are ordered based on adjusted p-values
 ```{r}
 # Filter the DESeq2 dataset (dds) to keep only LNCAP samples
@@ -847,10 +854,8 @@ ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
 qp
 ```
 ![Volcano plot of differential gene expression in LNCAP ](results/vp_lncap.png)
-> ** Figure:  Volcano plot of differential gene expression in LNCAP: ** 
+> **Figure:  Volcano plot of differential gene expression in LNCAP:** 
 > The volcano plot displays the results of differential expression analysis, with log₂ fold change on the x-axis and –log₁₀ adjusted p-value on the y-axis. Genes with p-adj < 0.05, are grouped as upregulated (log₂ fold change > 1)are shown in orange, downregulated (log₂ fold change < 1) in purple, and non-significant (p-adj > 0.05) in grey. Under the oxygen stress condition, more genes are upregulated than downregulated, indicating increased transcriptional expression.
-
-
 
 Gene Set Enrichment Analysis (GSEA)
 -----------------------------------
@@ -952,7 +957,7 @@ ggsave("results/enrichment_overall_lncap.png",
 
 
 ```
-![PCA before DESEQ ](results/enrichment_overall_lncap.png)
+![Pathways enriched in LNCAP ](results/enrichment_overall_lncap.png)
 
 ## Pathway enrichment by significant DEGs
 Pathway enrichment using ReactomePA to see which biological processes are impacted in the significant DEGs
@@ -972,7 +977,7 @@ ggsave("results/react_sig_genes_lncap.png",
        width = 8, height = 10, dpi = 300)
 
 ```
-![PCA before DESEQ ](results/react_sig_genes_lncap.png)
+![Pathways enriched by diferentially expressed genes in LNCAP ](results/react_sig_genes_lncap.png)
 
 ## GSEA of Hallmark Programs 
 in order to understand broad biological responses in LNCAP cells under hypoxia
@@ -1095,11 +1100,12 @@ ggsave("results/hallmark_enrich_lncap.png",
        bg = "white",
        width = 10, height = 10, dpi = 300)
 ```
-![PCA before DESEQ ](results/hallmark_enrich_lncap.png)
+![Cell programs enriched in LNCAP ](results/hallmark_enrich_lncap.png)
 
 ---
 
 #PC3 - Hypoxia VS Normoxia
+
 The variabilty of genes expression across condition for PC3 cell lime is checked
 From the dds, only LNCAP cell lines are filtered 
 ```{r}
