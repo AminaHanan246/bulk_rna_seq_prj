@@ -1,6 +1,7 @@
 # Bulk RNA-Seq Analysis Project with GSEA
 
 This repository contains a complete workflow for bulk RNA-seq analysis, from raw sequence data to differential gene expression and pathway enrichment analysis. The project demonstrates RNA-seq preprocessing, quality control, alignment, quantification, differential expression, and Gene Set Enrichment Analysis (GSEA) using R, Python, and standard bioinformatics tools.
+
 _This pipeline was inspired by Erick Lu’s Bulk RNA-seq tutorial (2020). The current project adapts the workflow using HISAT2, featureCounts, and additional QC/filtering steps to create a reproducible RNA-seq analysis pipeline_
 ---
 
@@ -220,8 +221,7 @@ AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
  2. Read sequence
  3. Separator line(starts with +)
  4. Quality score of each base (based on ASCII)
-
-</details>
+</details>```
 
 ### Mapping reads
 The pre-built genome index, required for mapping, is downloaded using the `wget` command and is extracted using `tar -xvzf` command:
