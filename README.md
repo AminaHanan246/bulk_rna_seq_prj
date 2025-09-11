@@ -578,7 +578,8 @@ p
 output_plot <- "results/genebiotype_proportions.png"
 ggsave(output_plot, plot = p, width = 8, height = 6, dpi = 300)
 ```
-<img src="results/pca_after.png" alt="PCA after DESEQ " width="500"/>
+<img src="results/genebiotype_proportions.png" alt="Distribution of biotypes in filtered data" width="500"/>
+
 > **Figure: Distribution of biotypes in filtered data:**
 > The plots shows most of the dataset contains protein coding genes, with other biotpes such as immunogloblins and T-cell receptors in negligible proportions.
 
@@ -606,7 +607,8 @@ plot_PCA(vsd)
 dev.off()
 plot_PCA(vsd)
 ```
-<img src="results/pca_after.png" alt="PCA after DESEQ " width="500"/>
+<img src="results/pca_before.png" alt="PCA before DESEQ " width="500"/>
+
 > **Figure: PCA before DESeq:**
 > PCA shows the potential batch effect and the variance structure in the dataset. Here the clustering is seen to be based on biological difference along PC1, which acconts for the most difference.
 
@@ -663,6 +665,7 @@ dev.off()
 plot_PCA(vsd)
 ```
 <img src="results/pca_after.png" alt="PCA after DESEQ " width="500"/>
+
 > **Figure: PCA after DESeq:**
 > PCA shows the variance structure after removal of batch effect in the dataset. Here the clustering is seen to be similar to PCA plot before DESEQ which indicates minimal batch effect.
 
@@ -719,6 +722,7 @@ variable_gene_heatmap(vsd, num_genes = 40, annotation = annotation)
 
 ```
 <img src="results/variable_gene_heatmap.png" alt="Variable genes HeatMap " width="500"/>
+
 > **Figure: Clustered Heatmap of Gene Expression:**
 > The heatap visualizes gene expression levels across samples under hypoxia and normoxia in LNCaP and PC3 cell lines. The blue-to-red gradient reflects low to high expression, respectively. Hierarchical clustering reveals  sample clusters based on variability in gene expressions, highlighting transcriptional differences due to both oxygen condition and cell type.
 
@@ -756,6 +760,7 @@ for (i in 1:8) {
 dev.off()
 ```
 <img src="results/density_plots_raw_vst.png" alt="Density plots of raw vs. VST-transformed expression values " width="500"/>
+
 > **Figure: Density plots of raw vs. VST-transformed expression values:**
 > The plots indicate that raw expression values have a highly skewed distribution, with particularly high variance in low-count regions. This variability makes raw data difficult to compare across samples. After applying Variance Stabilizing Transformation (VST), the distributions become more symmetric and bell-shaped, with variance stabilized across the range of expression values. This transformation enhances comparability between samples and prepares the data for downstream statistical analysis.
 
@@ -797,6 +802,7 @@ gene_plot<-plot_counts(dds, "IGFBP1")
 ggsave(filename ="results/IGFBP1_cond.png" , plot = gene_plot,bg = "white", width = 8, height = 6, dpi = 300)
 ```
 <img src="results/IGFBP1_cond.png" alt="Normalized expression of IGFBP1 across conditions" width="500"/>
+
 > **Figure: Normalized expression of IGFBP1 across conditions:**
 > This boxplot shows the DESeq2-normalized expression of IGFBP1 (ENSG00000146678) across sample conditions. Higher expression in seen in PC3 cell lines when compared to low levels in LNCAP cell. Among PC3 cells,  higher levels of expression is seem in low oxygen condition. These patterns suggest that IGFBP1 is upregulated under hypoxia in PC3 cells, highlighting a potential cell line–specific response to oxygen stress.
 
@@ -870,6 +876,7 @@ ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
 qp
 ```
 <img src="results/vp_lncap.png" alt="Volcano plot of differential gene expression in LNCAP" width="500"/>
+
 > **Figure:  Volcano plot of differential gene expression in LNCAP:** 
 > The volcano plot displays the results of differential expression analysis, with log₂ fold change on the x-axis and –log₁₀ adjusted p-value on the y-axis. Genes with p-adj < 0.05, are grouped as upregulated (log₂ fold change > 1)are shown in orange, downregulated (log₂ fold change < 1) in purple, and non-significant (p-adj > 0.05) in grey. Under the oxygen stress condition, more genes are upregulated than downregulated, indicating increased transcriptional expression.
 
@@ -974,6 +981,7 @@ ggsave("results/enrichment_overall_lncap.png",
 
 ```
 <img src="results/enrichment_overall_lncap.png" alt="Pathways enriched in LNCAP " width="500"/>
+
 > **Figure: Top enriched pathways in LNCAP:**
 > The plot shows top enriched pathway based on normalised enrichment scores(NES). The NES values are negative, indicating significant downregulation in these pathway during low oxygen stress. The dot size reflects number of genes involved and dot color indicates statistical significance based on FDR-adjusted p-vlaue.The supressed pathway include transalation, ribosomal RNA processing and protein synthesis-related pathway along with nonsense-mediated deacy and selenometabolism indicating reduction in energy-intensive protein production and RNA turnover. 
 
@@ -996,6 +1004,7 @@ ggsave("results/react_sig_genes_lncap.png",
 
 ```
 <img src="results/react_sig_genes_lncap.png" alt="Pathways enriched by DEGs in LNCAP " width="500"/>
+
 > **Figure: Pathways enriched by significant genes in LNCAP:**
 > The dot plot shows enriched pathways ranked by significant differentially expressed genes. The gene-ratio is based on the percentage on DEGs involved in pathway. The dot size reflects number of genes involved and dot color indicates statistical significance based on FDR-adjusted p-vlaue. Enriched pathways include metabolism of amino acids, transalation, respiratory electron transport and stress responses
 
@@ -1121,6 +1130,7 @@ ggsave("results/hallmark_enrich_lncap.png",
        width = 10, height = 10, dpi = 300)
 ```
 <img src="results/hallmark_enrich_lncap.png" alt="Cell programs enriched in LNCAP " width="500"/>
+
 > **Figure: Hallmark pathway enrichment analysis in LNCaP cells under hypoxia:**
 Bar plot of normalized enrichment scores (NES) showing pathways significantly altered under hypoxia. The blue bars indiactes the significantly enriched pathway with padj-values<0.05  Pathways such as glycolysis, angiogenesis, EMT, and TGF-beta signaling were significantly upregulated, support tumor survival and progression in low-oxygen environments. In contrast, oxidative phosphorylation, interferon responses, and inflammatory pathways were significantly downregulated, indicating suppression of anti-tumor immune activity and a metabolic shift away from mitochondrial respiration.
 ---
