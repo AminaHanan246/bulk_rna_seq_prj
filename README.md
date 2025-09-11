@@ -175,16 +175,19 @@ The fastqc reports can be combined into one summary report using `Mulitqc` with 
 ```bash
 multiqc fastqc_results/ -o multiqc_report/
 ```
+<img src="results/Multiqc_report_mean_quality_scores.png" width="500" height="500"/> <img src="results/Multiqc_report_adapter_content.png" width="500" height="425"/> 
+> The **mean quality score** of the pre-trimmed SRA reads are within the desirable region and with negligible adapter content, trimming can be skipped to preserve read length and avoid unnecessary processing.
+
 
 Trimming(optional)
 ------------------
-Trimming is pre-alignment step to remove adapter sequences and low-quality bases. The step us done based on the FASTqc report generated earlier which show the quality scores. The following command is used to trim SRR7079504:
+Trimming is pre-alignment step to remove adapter sequences and low-quality bases. The step is done based on the FastQC report generated earlier which show the quality scores. The following command is used to trim SRR7079504:
 ```bash
 trimmomatic SE -threads 4 SRR7179504_pass.fastq.gz SRR7179504_trimmed.fastq.gz TRAILING:10 -phred33
 ```
 After the trimming process, the quality of the read is once again assessed.
 
-Since the reads have short length and adapter sequences removed during FASTQ file conversion, this step is skipped as it may introduce biasness and poor alignment (lenient filtering is done since the reads are used for quantification).
+Since the reads have short length and adapter sequences removed during FASTQ file conversion, this step is skipped as it may introduce, shorter reads, biasness and poor alignment.
 
 ### Concatenating FASTQ files to sample files
 The LNCAP samples are associated with four SRA files each and is concatenated into single FASTQ file using the command:
