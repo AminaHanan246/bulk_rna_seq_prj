@@ -692,6 +692,7 @@ dev.off()
 plotDists(vsd)
 ```
 <img src="results/sampleheatmap1.png" alt="Clustering of samples based on cell line and oxygen condition" width="500"/>
+
 > **Figure: Clustered Heatmap of Gene Expression:**
 > The heatap show distinct clustering across samples based on cell lines and oxygen conditions. This indicates that experiment was successfull
 
@@ -980,7 +981,7 @@ ggsave("results/enrichment_overall_lncap.png",
 
 
 ```
-<img src="results/enrichment_overall_lncap.png" alt="Pathways enriched in LNCAP " width="500"/>
+<img src="results/enrichment_overall_lncap.png" alt="Pathways enriched in LNCAP " height="500"/>
 
 > **Figure: Top enriched pathways in LNCAP:**
 > The plot shows top enriched pathway based on normalised enrichment scores(NES). The NES values are negative, indicating significant downregulation in these pathway during low oxygen stress. The dot size reflects number of genes involved and dot color indicates statistical significance based on FDR-adjusted p-vlaue.The supressed pathway include transalation, ribosomal RNA processing and protein synthesis-related pathway along with nonsense-mediated deacy and selenometabolism indicating reduction in energy-intensive protein production and RNA turnover. 
@@ -1129,7 +1130,7 @@ ggsave("results/hallmark_enrich_lncap.png",
        bg = "white",
        width = 10, height = 10, dpi = 300)
 ```
-<img src="results/hallmark_enrich_lncap.png" alt="Cell programs enriched in LNCAP " width="500"/>
+<img src="results/hallmark_enrich_lncap.png" alt="Cell programs enriched in LNCAP " width="700"/>
 
 > **Figure: Hallmark pathway enrichment analysis in LNCaP cells under hypoxia:**
 Bar plot of normalized enrichment scores (NES) showing pathways significantly altered under hypoxia. The blue bars indiactes the significantly enriched pathway with padj-values<0.05  Pathways such as glycolysis, angiogenesis, EMT, and TGF-beta signaling were significantly upregulated, support tumor survival and progression in low-oxygen environments. In contrast, oxidative phosphorylation, interferon responses, and inflammatory pathways were significantly downregulated, indicating suppression of anti-tumor immune activity and a metabolic shift away from mitochondrial respiration.
