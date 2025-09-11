@@ -10,15 +10,15 @@ This repository contains a complete workflow for bulk RNA-seq analysis, from raw
 
 The goal of this project is to analyze bulk RNA-seq data to identify differentially expressed genes (DEGs) and enriched biological pathways. The workflow includes:
 
-1. Data Acquisition: Download raw RNA-seq data (SRA format) and convert to FASTQ.
-2. Quality Control: Assess read quality using FastQC and MultiQC.
-3. Pre-processing: (Optional) trimming of adapters and low-quality reads using Trimmomatic.
-4. Alignment: Map reads to reference genome using HISAT2 to human reference genome GRCh38_p14 .
-5. Sorting and indexing using SAMtools 
-6. Quantification: Count reads per gene using featureCounts.
-7. Differential Expression Analysis: Perform DE analysis with DESeq2.
-8. Gene Set Enrichment Analysis (GSEA): Identify enriched pathways from DE genes.
-9. Visualization: Generate PCA plots, heatmaps, volcano plots, and GSEA enrichment plots.
+1. **Data Acquisition:** Download raw RNA-seq data (SRA format) and convert to FASTQ.
+2. **Quality Control:** Assess read quality using FastQC and MultiQC.
+3. **Pre-processing:** (Optional) trimming of adapters and low-quality reads using Trimmomatic.
+4. **Alignment:** Map reads to reference genome using HISAT2 to human reference genome GRCh38_p14 .
+5. **Sorting and indexing** using SAMtools 
+6. **Read quantification:** Count reads per gene using featureCounts.
+7. **Differential Expression Analysis:** Perform DE analysis with DESeq2.
+8. **Gene Set Enrichment Analysis (GSEA):** Identify enriched pathways from DE genes.
+9. **Visualization:** Generate PCA plots, heatmaps, volcano plots, and GSEA enrichment plots.
 
 ---
 
