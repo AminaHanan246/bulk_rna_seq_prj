@@ -332,7 +332,7 @@ featureCounts -s 0 -a ../fastq/Homo_sapiens.GRCh38.114.gtf \
  `{bam}`: Name of the BAM file to be used
 
 The FeatureCounts output includes a count table, that contains read count for genome features, and summary of counting results
-The count table includes annotation columns: Geneid, Chr, Start, End, Strand, and Length, and reads counts for each genes. The count summary includes number of alignments that were successful and also number of assignment that failed.
+The count table includes annotation columns: Geneid, Chr, Start, End, Strand, and Length, and reads counts for each genes. The count summary includes number of alignments that were successful and also number of assignment that failed.[^1]
 
 Since multiple files needs to be quantified, the following python script [`scripts/feature_counts.py`](scripts/feature_counts.py) is used:
 ```python
@@ -578,7 +578,9 @@ p
 output_plot <- "results/genebiotype_proportions.png"
 ggsave(output_plot, plot = p, width = 8, height = 6, dpi = 300)
 ```
+<div style="text-align: center;">
 <img src="results/genebiotype_proportions.png" alt="Distribution of biotypes in filtered data" width="500"/>
+</div>
 
 > **Figure: Distribution of biotypes in filtered data:**
 > The plots shows most of the dataset contains protein coding genes, with other biotpes such as immunogloblins and T-cell receptors in negligible proportions.
@@ -607,7 +609,9 @@ plot_PCA(vsd)
 dev.off()
 plot_PCA(vsd)
 ```
+<div style="text-align: center;">
 <img src="results/pca_before.png" alt="PCA before DESEQ " width="500"/>
+</div>
 
 > **Figure: PCA before DESeq:**
 > PCA shows the potential batch effect and the variance structure in the dataset. Here the clustering is seen to be based on biological difference along PC1, which acconts for the most difference.
@@ -664,7 +668,9 @@ plot_PCA(vsd)
 dev.off()
 plot_PCA(vsd)
 ```
+<div style="text-align: center;">
 <img src="results/pca_after.png" alt="PCA after DESEQ " width="500"/>
+</div>
 
 > **Figure: PCA after DESeq:**
 > PCA shows the variance structure after removal of batch effect in the dataset. Here the clustering is seen to be similar to PCA plot before DESEQ which indicates minimal batch effect.
@@ -691,7 +697,9 @@ plotDists(vsd)
 dev.off()
 plotDists(vsd)
 ```
+<div style="text-align: center;">
 <img src="results/sampleheatmap1.png" alt="Clustering of samples based on cell line and oxygen condition" width="500"/>
+</div>
 
 > **Figure: Clustered Heatmap of Gene Expression:**
 > The heatap show distinct clustering across samples based on cell lines and oxygen conditions. This indicates that experiment was successfull
@@ -722,7 +730,9 @@ dev.off()
 variable_gene_heatmap(vsd, num_genes = 40, annotation = annotation)
 
 ```
+<div style="text-align: center;">
 <img src="results/variable_gene_heatmap.png" alt="Variable genes HeatMap " width="500"/>
+</div>
 
 > **Figure: Clustered Heatmap of Gene Expression:**
 > The heatap visualizes gene expression levels across samples under hypoxia and normoxia in LNCaP and PC3 cell lines. The blue-to-red gradient reflects low to high expression, respectively. Hierarchical clustering reveals  sample clusters based on variability in gene expressions, highlighting transcriptional differences due to both oxygen condition and cell type.
@@ -760,7 +770,9 @@ for (i in 1:8) {
 }
 dev.off()
 ```
+<div style="text-align: center;">
 <img src="results/density_plots_raw_vst.png" alt="Density plots of raw vs. VST-transformed expression values " width="500"/>
+</div>
 
 > **Figure: Density plots of raw vs. VST-transformed expression values:**
 > The plots indicate that raw expression values have a highly skewed distribution, with particularly high variance in low-count regions. This variability makes raw data difficult to compare across samples. After applying Variance Stabilizing Transformation (VST), the distributions become more symmetric and bell-shaped, with variance stabilized across the range of expression values. This transformation enhances comparability between samples and prepares the data for downstream statistical analysis.
@@ -802,7 +814,9 @@ plot_counts <- function (dds, gene, normalization = "DESeq2"){
 gene_plot<-plot_counts(dds, "IGFBP1")
 ggsave(filename ="results/IGFBP1_cond.png" , plot = gene_plot,bg = "white", width = 8, height = 6, dpi = 300)
 ```
+<div style="text-align: center;">
 <img src="results/IGFBP1_cond.png" alt="Normalized expression of IGFBP1 across conditions" width="500"/>
+</div>
 
 > **Figure: Normalized expression of IGFBP1 across conditions:**
 > This boxplot shows the DESeq2-normalized expression of IGFBP1 (ENSG00000146678) across sample conditions. Higher expression in seen in PC3 cell lines when compared to low levels in LNCAP cell. Among PC3 cells,  higher levels of expression is seem in low oxygen condition. These patterns suggest that IGFBP1 is upregulated under hypoxia in PC3 cells, highlighting a potential cell line–specific response to oxygen stress.
@@ -876,7 +890,9 @@ v_plot <- "results/vp_lncap.png"
 ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
 qp
 ```
+<div style="text-align: center;">
 <img src="results/vp_lncap.png" alt="Volcano plot of differential gene expression in LNCAP" width="500"/>
+</div>
 
 > **Figure:  Volcano plot of differential gene expression in LNCAP:** 
 > The volcano plot displays the results of differential expression analysis, with log₂ fold change on the x-axis and –log₁₀ adjusted p-value on the y-axis. Genes with p-adj < 0.05, are grouped as upregulated (log₂ fold change > 1)are shown in orange, downregulated (log₂ fold change < 1) in purple, and non-significant (p-adj > 0.05) in grey. Under the oxygen stress condition, more genes are upregulated than downregulated, indicating increased transcriptional expression.
@@ -981,7 +997,9 @@ ggsave("results/enrichment_overall_lncap.png",
 
 
 ```
+<div style="text-align: center;">
 <img src="results/enrichment_overall_lncap.png" alt="Pathways enriched in LNCAP " height="500"/>
+</div>
 
 > **Figure: Top enriched pathways in LNCAP:**
 > The plot shows top enriched pathway based on normalised enrichment scores(NES). The NES values are negative, indicating significant downregulation in these pathway during low oxygen stress. The dot size reflects number of genes involved and dot color indicates statistical significance based on FDR-adjusted p-vlaue.The supressed pathway include transalation, ribosomal RNA processing and protein synthesis-related pathway along with nonsense-mediated deacy and selenometabolism indicating reduction in energy-intensive protein production and RNA turnover. 
@@ -1004,7 +1022,9 @@ ggsave("results/react_sig_genes_lncap.png",
        width = 8, height = 10, dpi = 300)
 
 ```
+<div style="text-align: center;">
 <img src="results/react_sig_genes_lncap.png" alt="Pathways enriched by DEGs in LNCAP " width="500"/>
+</div>
 
 > **Figure: Pathways enriched by significant genes in LNCAP:**
 > The dot plot shows enriched pathways ranked by significant differentially expressed genes. The gene-ratio is based on the percentage on DEGs involved in pathway. The dot size reflects number of genes involved and dot color indicates statistical significance based on FDR-adjusted p-vlaue. Enriched pathways include metabolism of amino acids, transalation, respiratory electron transport and stress responses
@@ -1130,7 +1150,9 @@ ggsave("results/hallmark_enrich_lncap.png",
        bg = "white",
        width = 10, height = 10, dpi = 300)
 ```
+<div style="text-align: center;">
 <img src="results/hallmark_enrich_lncap.png" alt="Cell programs enriched in LNCAP " width="700"/>
+</div>
 
 > **Figure: Hallmark pathway enrichment analysis in LNCaP cells under hypoxia:**
 Bar plot of normalized enrichment scores (NES) showing pathways significantly altered under hypoxia. The blue bars indiactes the significantly enriched pathway with padj-values<0.05  Pathways such as glycolysis, angiogenesis, EMT, and TGF-beta signaling were significantly upregulated, support tumor survival and progression in low-oxygen environments. In contrast, oxidative phosphorylation, interferon responses, and inflammatory pathways were significantly downregulated, indicating suppression of anti-tumor immune activity and a metabolic shift away from mitochondrial respiration.
@@ -1205,7 +1227,9 @@ v_plot <- "results/vp_pc3.png"
 ggsave(v_plot, plot = qp,bg = "white", width = 8, height = 6, dpi = 300)
 qp
 ```
+<div style="text-align: center;">
 <img src="results/vp_pc3.png" alt="volcano plot of PC3" width="500"/>
+</div>
 
 Gene Set Enrichment Analysis (GSEA)
 -----------------------------------
@@ -1303,7 +1327,9 @@ ggsave("results/enrichment_overall_pc3.png",
        width = 15, height = 6, dpi = 300)
 
 ```
+<div style="text-align: center;">
 <img src="results/enrichment_overall_pc3.png" alt="Overall enriched pathways in PC3 " width="500"/>
+</div>
 
 ## Pathway enrichment by significant DEGs
 ```{r}
@@ -1318,7 +1344,9 @@ ggsave("results/react_sig_genes_pc3.png",
        bg = "white",
        width = 8, height = 10, dpi = 300)
 ```
+<div style="text-align: center;">
 <img src="results/react_sig_genes_pc3.png" alt="Enriched pathways due to DEGs in PC3 " width="500"/>
+</div>
 
 ## GSEA of Hallmark Programs
 ```{r}
@@ -1425,7 +1453,9 @@ ggsave("results/hallmark_enrich_pc3.png",
        bg = "white",
        width = 10, height = 10, dpi = 300)
 ```
+<div style="text-align: center;">
 <img src="results/hallmark_enrich_pc3.png" alt="Enriched cell programs in PC3 " width="500"/>
+</div>
 
 ---
 
@@ -1439,4 +1469,4 @@ sink()
 *THE END*
 
 
-https://bioconductor.org/packages/devel/bioc/vignettes/Rsubread/inst/doc/SubreadUsersGuide.pdf             
+[^1]:https://bioconductor.org/packages/devel/bioc/vignettes/Rsubread/inst/doc/SubreadUsersGuide.pdf             
