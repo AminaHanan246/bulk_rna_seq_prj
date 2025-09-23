@@ -20,6 +20,8 @@ The goal of this project is to analyze bulk RNA-seq data to identify differentia
 8. **Gene Set Enrichment Analysis (GSEA):** Identify enriched pathways from DE genes.
 9. **Visualization:** Generate PCA plots, heatmaps, volcano plots, and GSEA enrichment plots.
 
+![](RNA-seq_workflow.gif)
+
 ---
 
 ## Folder Structure
