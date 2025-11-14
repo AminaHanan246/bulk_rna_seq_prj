@@ -1,0 +1,130 @@
+---
+title: "LNCAP - Normoxia vs Hypoxia"
+author: "Amina Hanaan"
+date: "2025-11-14"
+output: html_document
+---
+###Setiing path 
+```{r setup}
+dir <- getwd()
+work_dir <- normalizePath(file.path(dir, "/../"))
+setwd(work_dir)
+knitr::opts_knit$set(root.dir = work_dir)
+
+# Create directory if it doesn't exist
+dir.create(file.path(work_dir, "data"), recursive = TRUE)
+dir.create(file.path(work_dir, "results"), recursive = TRUE)
+
+source("scripts/degs_pathway_enrichment.R")
+```
+
+#LNCAP - Hypoxia VS Normoxia
+The LNCAP sampled were filtered from dataset, to compare hypoxia vs normoxia. Normoxia is set as reference and DESeq2 was ran. The genes are ordered based on adjusted p-values
+```{r}
+cell_type <- "lncap"
+loaded_dds <- readRDS("normoxia_vs_hypoxia_deseq.rds")
+# Filter the DESeq2 dataset (dds) to keep only LNCAP samples
+cell <- filter_celltype(dds,condition)
+dds_cell <- cell$dds
+res_cell <- cell$results
+rescellOrdered<-cell$ordered_results
+```
+
+
+```{r}
+plotMA(rescellOrdered,ylim=c(-2,2))
+```
+###Volcano plot - gene regulation
+The gene regulation under hypoxia condition in LNCAP cell lines, based on which volcano plot is created. Genes were categorized as upregulated, downregulated, or not significant based on fold change and adjusted p-value.
+```{r}
+plot <- gene_regulation_plot(rescellOrdered)
+plot$gene_plot
+```
+
+###Gene Set Enrichment Analysis (GSEA)
+GSEA was performed using ReactomePA on DESeq2-derived log2 fold changes from LNCaP cells under hypoxia versus normoxia. Ensembl IDs were mapped to Entrez IDs, and genes were ranked by fold change. Enriched pathways were identified based on normalized enrichment scores (NES) and adjusted p-values.
+```{r}
+head(res_cell)
+
+res <- convert_to_entrez(res_cell)
+res_mapped<-res$res_mapped
+ngenes <- res$ngenes
+
+#GSEA
+enp_gsea <- run_gsea(ngenes)
+
+head(enp_gsea@result)
+```
+GSEA results are sorted by adjusted p-value and normalized enrichment score (NES) to highlight the most responsive pathways. Here entire expression profile (including non-significant genes) is considered
+```{r}
+top20<- top_20_pathways(enp_gsea)
+```
+
+###Pathway enrichment based on overall expression profile
+Plotted the top Reactome pathways from GSEA using NES, FDR, and gene set size to show which biological processes are most enriched
+```{r}
+pathway_enrich_overall(top20)
+```
+
+###Pathway enrichment by significant DEGs
+Pathway enrichment using ReactomePA to see which biological processes are impacted in the significant DEGs
+```{r}
+pathway_enrich_sigDEGS(res_mapped, organism = "human")
+```
+
+###GSEA of Hallmark Programs 
+in order to understand broad biological responses in LNCAP cells under hypoxia
+
+Ranked Gene List for GSEA using log2fold change
+```{r}
+res_cell <- read.csv(paste0("D:/BI_prj/bulkrnaseq_proj/data/DEGs_",cell_type,".csv"), row.names = 1)
+head(res_cell)
+colnames(res_cell)
+
+rank_df <- ranked_gene_list(res_cell)
+
+```
+
+
+Downloaded Hallmark gene sets from MSigDB <https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp#H> and prepped the ranked list for GSEA
+```{r}
+library(fgsea)
+# Load Hallmark gene sets from GMT file
+hallmark_pathway <- gmtPathways("D:/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/data/h.all.v2025.1.Hs.symbols.gmt")
+head(names(hallmark_pathway))
+head(hallmark_pathway$HALLMARK_HYPOXIA, 20)
+
+```
+
+###Validate Ranked Gene list
+```{r}
+str(rank_df)
+ranked_list<- prepare_ranked_list(rank_df)
+
+
+print(head(ranked_list))
+```
+
+Run GSEA using Hallmark gene sets and ranked LNCaP gene list
+```{r}
+cell_fgsea<-run_fgsea(hallmark_pathway,ranked_list)
+fgsea_results<-cell_fgsea$results  
+dim(fgsea_results)
+
+fgsea_results_ordered<-cell_fgsea$ordered_results
+
+```
+
+###Hallmark GSEA – Hypoxia Response
+The plot to show which Hallmark programs are enriched in LNCaP cells under hypoxia. Pathways are sorted by NES, and bars are colored by significance (padj < 0.05).
+
+```{r}
+hallmark_enrich<- waterfall_plot(fgsea_results, paste0("Hallmark pathways altered by hypoxia in ",toupper(cell_type)," cells"))
+
+```
+
+```{r}
+sink("lncap_session_info.txt")
+sessionInfo()
+sink()
+```
