@@ -102,17 +102,6 @@ Rejected 13548432 READS because of filtering out non-biological READS
 Read 13548432 spots for /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
 Written 13548432 spots for /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
 ```
-`--outdir fastq`           : Specifies the output directory for the FASTQ files  
-`--gzip`                   : Compresses the output FASTQ files using gzip  
-`--skip-technical`         : Skips technical reads (e.g., control reads or adapters)  
-`--readids`                : Includes read identifiers in the FASTQ header  
-`--read-filter pass`       : Filters out low-quality reads; keeps only those marked "pass"  
-`--dumpbase`               : Outputs base calls (A, T, G, C, N) instead of color space  
-`--split-3`                : Splits paired-end reads into separate files (`_1.fastq.gz`, `_2.fastq.gz`)  
-`--clip`                   : Removes adapter sequences from reads  
-`~/sra/...`                : Path to the input SRA file  
-
-A compressed file `SRR7179504_pass.fastq.gz` is created in the subdirectory called `fastq`. 
 Since multiple SRA files are to be downloaded, a python script is written to automate the process. The code is provided in [`scripts/fastq_download.py`](scripts/fastq_download.py) and is as follows:
 ```python
 import subprocess
@@ -200,14 +189,7 @@ mv SRR7179541_pass.fastq.gz PC3_Hypoxia_S2.fastq.gz
 
 Mapping reads using HISAT2
 ---------------------------
-The raw sequence reads obtained in FASTQ format are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. This tells us which part of the gene was transcribed for the mRNA, and the number of times a read is mapped to a specific gene indicates whether the gene expression was high or low.
-
-<details>
-  <summary><strong>Principle of Bulk RNA-seq Mapping </strong></summary>
-    
-To perform bulk-RNA sequence analysis,  sequencing library needs to be prepared. The mRNA transcripts from cells are reverse transcribed into cDNA, fragmented and are attached with specialised adapter sequences in both ends. The adaptor act as priming site for sequencing and include sample-specific barcodes, allowing multiple libraries to be pooled and sequenced together. Finally, the prepared library is loaded onto a sequencing instrument, such as an Illumina sequencer, which reads millions of fragments in parallel and outputs the results in the form of FASTQ files. Each FASTQ file contains both the nucleotide sequence and a corresponding quality score for every base, providing the raw input required for downstream alignment and expression analysis.
-
-
+The raw sequence reads obtained in FASTQ format are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. 
 ```bash
 zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
 
@@ -216,11 +198,6 @@ GTGAANATAGGCCTTAGAGCACTTGANGTGNTAGNGCANGTNGNNCCGGAACGNNNNNNNNAGGTNGNNNGNGTTG
 +SRR7179520.1.1 1 length=76
 AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
 ```
- 1. Sequence identifier(starts with @)
- 2. Read sequence
- 3. Separator line(starts with +)
- 4. Quality score of each base (based on ASCII)
-</details>
 
 ### Mapping reads
 The pre-built genome index, required for mapping, is downloaded using the `wget` command and is extracted using `tar -xvzf` command:
@@ -233,36 +210,8 @@ The reads from FASTQ files are aligned to genome index using HISAT2, which does 
 ```bash
 hisat2 -p 8 -x GRCh38_index -U LNCAP_Normoxia_S1_R1_001.fastq.gz -S LNCAP_Normoxia_S1.sam
 ```
- ` -p ` : Number of threads to be used                          
- ` -x ` : Genome index to be used                                         
- ` -U ` : Unpaired-reads to be aligned                                        
- ` -S ` : Write file to SAM alignment                                              
-
 > [!NOTE] 
 > STAR aligner provides more accurate and sensitive mapping; however, HISAT2 is used here because it uses less memory and is significantly faster
-
-<details>
-    <summary><strong>BAM file format</strong></summary>
-The output BAM file consists of 11 fields for alignment information: 
-
-```bash
-samtools view LNCAP_Normoxia_S2.bam | head -n 1
-
-SRR7179504.1361607.1    272     1       14277   0       76M     *0       0       GAAACAGGGCCGCGGGGAGCGGCTGCCCCCACTGCCTAGGGACCAACAGGGGCAGGAGGCAGTCACTGACCCCGAG     //</EEEE/E//</6//EEE//E/AEEEE<//AEEEAAEEEEEEE<AEEEEEAEEEEEEEEE6EEEEEEEEAAAAA     AS:i:-15        ZS:i:-15 XN:i:0  XM:i:5  XO:i:0  XG:i:0  NM:i:5  MD:Z:8T1A2T6T0T54YT:Z:UU NH:i:3
-```
- 1. QNAME -Read name
- 2. FLAG - bitwise flag
- 3. RNAME - Chromosome (if read is not aligned '*')
- 4. POS - 1-based left-most mapping position
- 5. MAPQ - Mapping quality
- 6. CIGAR - describes the position of instertion(I),deletion(D) and matches(M) in alignment
- 7. RNEXT - name of the pair sequence (in pair-ended sequences) - * unpaired
- 8. PNEXT - position of pair 
- 9. TLEN - Total span (size of pair reads and distance between them)
-  10. SEQ - Read Sequence
-  11. QUAL - Phred quality
- and TAG - TAG information (AS - alignment score, NH - number of reported alignments 
-</details>
 
 Sorting and Indexing BAM Files using SAMtool
 --------------------------------------------
@@ -318,11 +267,6 @@ featureCounts -s 0 -a ../fastq/Homo_sapiens.GRCh38.114.gtf \
         -o ../fastq/{bam}_featurecounts.txt \
         {bam}"
 ```
- ` -s ` : Indicate if strand-specific read counting should be performed.        
- ` -a ` : The annotation file to be used                 
- ` -o ` : Name of the output directory          
- `{bam}`: Name of the BAM file to be used
-
 The FeatureCounts output includes a count table, that contains read count for genome features, and summary of counting results
 The count table includes annotation columns: Geneid, Chr, Start, End, Strand, and Length, and reads counts for each genes. The count summary includes number of alignments that were successful and also number of assignment that failed.[^1]
 
