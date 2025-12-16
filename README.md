@@ -1,6 +1,6 @@
 # Bulk RNA-Seq Analysis Project with GSEA
 
-This repository contains a complete workflow for bulk RNA-seq analysis, from raw sequence data to differential gene expression and pathway enrichment analysis. The project demonstrates RNA-seq preprocessing, quality control, alignment, quantification, differential expression, and Gene Set Enrichment Analysis (GSEA) using R, Python, and standard bioinformatics tools.
+This repository contains a complete workflow for bulk RNA-seq analysis, including RNA-seq preprocessing, quality control, alignment, quantification, differential expression, and Gene Set Enrichment Analysis (GSEA) using R, Python, and standard bioinformatics tools.
 
 *This pipeline was inspired by Erick Lu’s Bulk RNA-seq tutorial (2020). The current project adapts the workflow using HISAT2, featureCounts, and additional QC/filtering steps to create a reproducible RNA-seq analysis pipeline*
 
@@ -24,41 +24,14 @@ bulk_rna_seq_prj/
 └── environment.yml     # Dependencies for reproducibility
 ```
 ---
-## Setup & Installation
+## Dataset Overview
+*Source:* GEO accession GSE106305
+*Publication:* Guo et al., Nature Communications 2019
+*Cell Lines:* LNCaP (androgen-sensitive) and PC3 (androgen-independent)
+*Conditions:* Normoxia (~21% O₂) vs. Hypoxia (~1-5% O₂)
+*Replicates:* 2 biological replicates per condition
+*Sequencing:* Illumina HiSeq 2000
 
-**Programs required:** It is recommended that the user have Anaconda installed, through which all required programs can be installed. Assuming that Anaconda is available, all the required programs can be installed using the following:
-```bash
-#Install the required programs using anaconda
-conda create -n preprocess python=3.7
-
-conda install -n preprocess -c bioconda fastqc
-conda install -n preprocess -c trimmomatic
-conda install -n preprocess -c bioconda multiqc
-conda install -n preprocess -c hisat2
-conda install -n preprocess -c samtools
-conda install -n preprocess -c subread
-```
-
-The NCBI’s SRA toolkit is installed, and the path is added to the /.bashrc configuration file:
-```bash
-#Install SRA toolkit
-sudo apt install sra-toolkit
-
-#Adding PATH to configuration file
-nano ~/.bashrc
-export PATH="/home/amina/sratoolkit/bin:$PATH"
-source ~/.bashrc
-```
-
-The conda environment needs to be activated before running the pipeline using command:
-```bash
-conda activate preprocess
-```
----
-## Pre-processing Pipeline
-
-The dataset was obtained from Gene Expression Omnibus (GEO) under the accession ID GSE106305 and produced as part of the research [Guo et al., Nature Communications 2019](https://www.ncbi.nlm.nih.gov/pubmed/30655535). The dataset provides transcriptomic profiles for two prostate cancer cell lines, LNCaP and PC3, cultured under standard oxygen levels (normoxia, ~21% O₂) and reduced oxygen levels (hypoxia, ~1–5% O₂).
-The objective was to find the differentially expressed under conditions defined as Empty Vector (LNCaP) and siCtrl (PC3). Each condition contains two biological replicates with raw sequence reads available in the Sequence Read Archive (SRA). 
 ### LNCAP (Empty Vector) Metadata
 
 | Condition            | Replicate              | GEO Identifier | SRA Identifier (SRX) | SRA Runs                                       |
@@ -77,228 +50,100 @@ The objective was to find the differentially expressed under conditions defined 
 | Hypooxia             | 1                      | GSM3145521     | SRX4096747           | SRR7179540                                     |
 | Hypooxia             | 2                      | GSM3145522     | SRX4096748           | SRR7179541                                     |
 
+## Setup & Installation
+
+**Programs required:** It is recommended that the user have Anaconda installed, through which all required programs can be installed. Assuming that Anaconda is available, all the required programs can be installed using the following:
+```bash
+#Install the required programs using anaconda
+conda create -n preprocess python=3.7
+
+conda install -n preprocess -c bioconda sra-toolkit fastqc multiqc trimmomatic hisat2 samtools subread
+```
+
+
+### Adding PATH to configuration file
+```
+nano ~/.bashrc
+export PATH="/home/amina/sratoolkit/bin:$PATH"
+source ~/.bashrc
+```
+
+The conda environment needs to be activated before running the pipeline using command:
+```bash
+conda activate preprocess
+```
+---
+
+
 Download FASTQ files using SRA tools
 ------------------------------------
-Raw reads are deposited as SRA files and can be retrieved using the NCBI SRA Toolkit. The `prefetch` command enables downloading by providing the relevant SRA accession number (SRR). After download, `fastq-dump` may be used to convert SRA files into FASTQ format for downstream quality control and alignment.
-```bash
-prefetch SRR7179504
-
-2025-08-27T05:28:06 prefetch.3.2.1: 1) Resolving 'SRR7179504'...
-2025-08-27T05:28:10 prefetch.3.2.1: Current preference is set to retrieve SRA Normalized Format files with full base quality scores
-2025-08-16T05:28:12 prefetch.3.2.1: 1) Downloading 'SRR7179504'...
-2025-08-16T05:28:12 prefetch.3.2.1:  SRA Normalized Format file is being retrieved
-2025-08-16T05:28:12 prefetch.3.2.1:  Downloading via HTTPS...
-2025-08-16T05:29:00 prefetch.3.2.1:  HTTPS download succeed
-2025-08-16T05:29:04 prefetch.3.2.1:  'SRR7179504' is valid: 439677804 bytes were streamed from 439667257
-2025-08-16T05:29:04 prefetch.3.2.1: 1) 'SRR7179504' was downloaded successfully
-2025-08-16T05:29:04 prefetch.3.2.1: 1) Resolving 'SRR7179504's dependencies...
-2025-08-16T05:29:04 prefetch.3.2.1: 'SRR7179504' has 0 unresolved dependencies
-```
-The downloaded SRA file “SRR7019504” is then read into FASTQ file. For this the command `fastq-dump`:
-```bash
-fastq-dump --outdir fastq --gzip --skip-technical  --readids --read-filter pass --dumpbase --split-3 --clip /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
-
-Rejected 13548432 READS because of filtering out non-biological READS
-Read 13548432 spots for /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
-Written 13548432 spots for /mnt/d/BI_prj/bulkrnaseq_proj/normoxia_vs_hypoxia/SRR7179504/SRR7179504.sra
-```
-Since multiple SRA files are to be downloaded, a python script is written to automate the process. The code is provided in [`scripts/fastq_download.py`](scripts/fastq_download.py) and is as follows:
-```python
-import subprocess
-import time
-
-sra_numbers = [
-    "SRR7179504", "SRR7179505", "SRR7179506", "SRR7179507",
-    "SRR7179508", "SRR7179509", "SRR7179510", "SRR7179511",
-    "SRR7179520", "SRR7179521", "SRR7179522", "SRR7179523",
-    "SRR7179524", "SRR7179525", "SRR7179526", "SRR7179527",
-    "SRR7179536", "SRR7179537", "SRR7179540", "SRR7179541"
-]
-
-for sra_id in sra_numbers:
-    print("\n=== Downloading:", sra_id, "===")
-    prefetch_cmd = f"prefetch {sra_id}"
-    print("Command:", prefetch_cmd)
-
-    start_time = time.time()
-    subprocess.call(prefetch_cmd, shell=True)
-    end_time = time.time()
-
-    elapsed_min = (end_time - start_time) / 60
-    print(f"⏱ Download time for {sra_id}: {elapsed_min:.2f} minutes")
-
-for sra_id in sra_numbers:
-    sra_path = f'"../{sra_id}/{sra_id}.sra"'
-    print("\n=== Generating FASTQ for:", sra_id, "===")
-    fastq_dump_cmd = (
-        f"fastq-dump --outdir fastq --gzip --skip-technical "
-        f"--readids --read-filter pass --dumpbase --split-3 --clip {sra_path}"
-    )
-    print("Command:", fastq_dump_cmd)
-
-    start_time = time.time()
-    subprocess.call(fastq_dump_cmd, shell=True)
-    end_time = time.time()
-
-    elapsed_min = (end_time - start_time) / 60
-    print(f"⏱ FASTQ generation time for {sra_id}: {elapsed_min:.2f} minutes")
-```
-All the SRA files are now downloaded in subdirectory `fastq` wth path to sra file being `/SRR*/SRR*.sra`
+SRA-Toolkit: `prefetch`+`fasterq-dump`
+- `--skip-technical`         : Skips technical reads (e.g., control reads or adapters)  
+- `--read-filter pass`       : Filters out low-quality reads; keeps only those marked "pass"  
+- `--clip`                   : Removes adapter sequences from reads  
+- Automated python scripts [`scripts/fastq_download.py`](scripts/fastq_download.py)
 
 Pre-alignment QC
 ----------------
-The raw sequence data is assessed for quality. The following command is used to generate FastQC reports for samples in order to evaluate sequence quality, GC content, duplication rates, length distribution, K-mer content, and adapter contamination. The results are then recorded in the subdirectory "/fastq_results."
-```bash
-fastqc fastq/*.fastq.gz -o fastqc_results/ --threads 8
-```
+*FASTQC + MULTIQC*
 
-The fastqc reports can be combined into one summary report using `Mulitqc` with the following command:
-```bash
-multiqc fastqc_results/ -o multiqc_report/
-```
-<img src="results/Multiqc_report_mean_quality_scores.png" width="500" height="500"/> <img src="results/Multiqc_report_adapter_content.png" width="500" height="425"/> 
-> The **mean quality score** of the pre-trimmed SRA reads are within the desirable region and with negligible adapter content, trimming can be skipped to preserve read length and avoid unnecessary processing.
+The raw sequence data is assessed for quality. ```
+<img src="results/Multiqc_report_mean_quality_scores.png" width="500" height="500"/>
+The mean quality scores >30 (Phred score) and have high-confidence base calls
+<img src="results/Multiqc_report_GC_content.png" width="500" height="425"/>  
+The GC content is around ideal content and library is prepared well 
+<img src="results/Multiqc_report_adapter_content.png" width="500" height="425"/> 
+Minimal adapter content (<5%) as adapters already removed by `fastq-dump --clip`. Adaptor sequences will also be excluded during alignment
 
-
-Trimming(optional)
+Trimming(skipped)
 ------------------
-Trimming is pre-alignment step to remove adapter sequences and low-quality bases. The step is done based on the FastQC report generated earlier which show the quality scores. The following command is used to trim SRR7079504:
-```bash
-trimmomatic SE -threads 4 SRR7179504_pass.fastq.gz SRR7179504_trimmed.fastq.gz TRAILING:10 -phred33
-```
-After the trimming process, the quality of the read is once again assessed.
+*Trimmomatic*
 
-Since the reads have short length and adapter sequences removed during FASTQ file conversion, this step is skipped as it may introduce, shorter reads, biasness and poor alignment.
+- Mean quality scores >30 (Phred score)
+- Read length is short (76 bp) — trimming would create short reads
+Since the reads have short length and adapter sequences at minimal, this step is skipped as it may introduce, shorter reads, biasness and reduced statistical power.
 
-### Concatenating FASTQ files to sample files
-The LNCAP samples are associated with four SRA files each and is concatenated into single FASTQ file using the command:
-```bash
-cat SRR7179504_pass.fastq.gz SRR7179505_pass.fastq.gz SRR7179506_pass.fastq.gz SRR7179507_pass.fastq.gz  > LNCAP_Normoxia_S1.fastq.gz
-cat SRR7179508_pass.fastq.gz SRR7179509_pass.fastq.gz SRR7179510_pass.fastq.gz SRR7179511_pass.fastq.gz  > LNCAP_Normoxia_S2.fastq.gz
-cat SRR7179520_pass.fastq.gz SRR7179521_pass.fastq.gz SRR7179522_pass.fastq.gz SRR7179523_pass.fastq.gz  > LNCAP_Hypoxia_S1.fastq.gz
-cat SRR7179524_pass.fastq.gz SRR7179525_pass.fastq.gz SRR7179526_pass.fastq.gz SRR7179527_pass.fastq.gz  > LNCAP_Hypoxia_S2.fastq.gz
-```
-
-The PC3 sample are associated with only one SRA file and is therefore renamed to the sample names using command:
-```bash
-mv SRR7179536_pass.fastq.gz PC3_Normoxia_S1.fastq.gz
-mv SRR7179537_pass.fastq.gz PC3_Normoxia_S2.fastq.gz
-mv SRR7179540_pass.fastq.gz PC3_Hypoxia_S1.fastq.gz
-mv SRR7179541_pass.fastq.gz PC3_Hypoxia_S2.fastq.gz
-```
+<img src="results/post_trim_SRR.png.png" width="500" height="425"/>  
+>Example of trimmed SRA file with reads at 26bp
 
 Mapping reads using HISAT2
 ---------------------------
-The raw sequence reads obtained in FASTQ format are aligned to a reference genome, where the reads are matched based on sequence similarity in the reference genome. 
-```bash
-zcat LNCAP_Hypoxia_S1.fastq.gz | head -4
+*HISAT2*
 
-@SRR7179520.1.1 1 length=76    
-GTGAANATAGGCCTTAGAGCACTTGANGTGNTAGNGCANGTNGNNCCGGAACGNNNNNNNNAGGTNGNNNGNGTTG
-+SRR7179520.1.1 1 length=76
-AAAAA#EEEEEEEEEEEEEEEEEEEE#EEE#EEE#EEE#EE#E##EEEEEEEE########EEEE#E###E#EAEA
-```
-
-### Mapping reads
-The pre-built genome index, required for mapping, is downloaded using the `wget` command and is extracted using `tar -xvzf` command:
-```bash
-wget https://genome-idx.s3.amazonaws.com/hisat/grch38_genome.tar.gz
-
-tar -xvzf grch38_genome.tar.gz
-```
-The reads from FASTQ files are aligned to genome index using HISAT2, which does splice-aware alignment for the LNCAP_Normoxia_S1:
-```bash
-hisat2 -p 8 -x GRCh38_index -U LNCAP_Normoxia_S1_R1_001.fastq.gz -S LNCAP_Normoxia_S1.sam
-```
-> [!NOTE] 
-> STAR aligner provides more accurate and sensitive mapping; however, HISAT2 is used here because it uses less memory and is significantly faster
+Among splice-aware aligners, STAR aligner provides more accurate and sensitive mapping
+- HISAT2 is used here because it uses less memory and is significantly faster
+- Automated processing: scripts/hisat_align.p
 
 Sorting and Indexing BAM Files using SAMtool
 --------------------------------------------
-After alignment, the BAM files created are unsorted. The samtools sort and index the BAM file based on genomic coordinates, which is essential for downstream analysis. The aim is to achieve fast retrieval of alignments mapped to regions without having to process the entire set of alignments. The file is sorted based on:
-1. Chromosome name
-2. Start position 
+*SAMtool*
 
-Since multiple files need to be aligned to the genome index, sorted, and indexed using samtool, the process is automated using a Python script. The code is provided in [`scripts/hisat_align.py`](scripts/hisat_align.py):
-```python
-files = [
-    "LNCAP_Normoxia_S1.fastq.gz",
-    "LNCAP_Normoxia_S2.fastq.gz",
-    "LNCAP_Hypoxia_S1.fastq.gz",
-    "LNCAP_Hypoxia_S2.fastq.gz",
-    "PC3_Normoxia_S1.fastq.gz",
-    "PC3_Normoxia_S2.fastq.gz"
-]
+In order to achieve fast retrieval of alignments mapped to regions without having to process the entire set of alignments. 
 
-logfile = "alignment_log.txt"
+Checking strandedness using FeatureCounts
+-----------------------------------------
+*FeatureCounts*
 
-for file in files:
-    sample_name = os.path.basename(file).replace(".fastq.gz", "")
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_entry = f"{timestamp} - Processing {sample_name}\n"
-    with open(logfile, "a") as log:
-        log.write(log_entry)
-    
-    start_time = time.time()
+The library was prepared using TruSeq® Stranded mRNA Library Prep Kit and therefore reads are reverse stranded. In order to confirm, featureCounts were run on one sample under different standedness condition:
 
-    hisat2_exec = (
-        f"hisat2 -x grch38_genome -U fastq/{file} | "
-        f"samtools sort -o {file}.bam && "
-        f"samtools index {file}.bam"
-    )
-    subprocess.run(hisat2_exec, shell=True)
+| Strand condition     | Assigned reads         | Unassigned_Ambiguity  | 
+|----------------------|------------------------|-----------------------|
+| Unstranded           | 35,704,156             |  4,056,493            |
+| Forward-strand       | 2,546,478              |  71345                |
+| Reverse-strand       | *37,370,684*           |  1,957,456            |          
+This confirms that the read is reverse-stranded
 
-    end_time = time.time()
-    duration = end_time - start_time
-    log_entry = f"{timestamp} - Finished processing {sample_name} in {duration:.2f} seconds\n"
-    with open(logfile, "a") as log:
-        log.write(log_entry)
-    print(f"Processed {sample_name} in {duration:.2f} seconds")
+Mapping Quality using Qualimap
+-------------------------------------
+*Qualimap*
 
-
-print("All commands executed successfully")
-```
 
 Read summarisation using FeatureCounts
 -------------------------------------
-The reads are quantified using FeatureCounts, which uses genomic coordinates in BAM files and maps to genomic features based on annotation in the reference genome.
-```bash
-featureCounts -s 0 -a ../fastq/Homo_sapiens.GRCh38.114.gtf \
-        -o ../fastq/{bam}_featurecounts.txt \
-        {bam}"
-```
-The FeatureCounts output includes a count table, that contains read count for genome features, and summary of counting results
-The count table includes annotation columns: Geneid, Chr, Start, End, Strand, and Length, and reads counts for each genes. The count summary includes number of alignments that were successful and also number of assignment that failed.[^1]
+*FeatureCounts*
 
-Since multiple files needs to be quantified, the following python script [`scripts/feature_counts.py`](scripts/feature_counts.py) is used:
-```python
-bam_files = [
-    "LNCAP_Normoxia_S1.bam",
-    "LNCAP_Normoxia_S2.bam",
-    "LNCAP_Hypoxia_S1.bam",
-    "LNCAP_Hypoxia_S2.bam",
-    "PC3_Normoxia_S1.bam",
-    "PC3_Normoxia_S2.bam",
-    "PC3_Hypoxia_S1.bam",
-    "PC3_Hypoxia_S2.bam"
-]
-
-# Loop over all BAM files
-for bam in bam_files:
-    start=time.time()  # start time
-
-    print(f"{start} Processing {bam} ...")
-    featurecounts = f"featureCounts -s 0 -a ../fastq/Homo_sapiens.GRCh38.114.gtf \
-        -o ../fastq/{bam}_featurecounts.txt \
-        {bam}"
-    subprocess.run(featurecounts, shell=True)
-
-    end=time.time()  # end time
-    runtime=(( (end - start) / 60 ))  # in minutes
-
-    print(f"✅ Completed {bam} in {runtime} minutes.")
-```
-After generating count tables and count summary for all the samples, the read counts for samples are merged using [`scripts/generating_countsmatrix.ipynb`](scripts/generating_countsmatrix.ipynb) into one dataset [`data/GSE106305_counts_matrix.csv`](data/GSE106305_counts_matrix.csv) 
+- 10-20× faster than HTSeq-count
+- Multi-mapping handling by counting ambiguous reads fractionally
 
 ---
 ## Downstream analysis
