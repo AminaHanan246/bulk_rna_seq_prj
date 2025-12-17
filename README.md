@@ -87,16 +87,17 @@ Pre-alignment QC
 ----------------
 *FASTQC + MULTIQC*
 
-The raw sequence data is assessed for quality. ```
+The raw sequence data is assessed for quality. 
+<p align="center">
 <img src="results/Multiqc_report_mean_quality_scores.png" width="500" height="500"/>
+> The mean quality scores >30 (Phred score) and have high-confidence base calls
 
-The mean quality scores >30 (Phred score) and have high-confidence base calls
 <img src="results/Multiqc_report_GC_content.png" width="500" height="425"/>  
+> The GC content is around ideal content and library is prepared well 
 
-The GC content is around ideal content and library is prepared well 
 <img src="results/Multiqc_report_adapter_content.png" width="500" height="425"/> 
-
-Minimal adapter content (<5%) as adapters already removed by `fastq-dump --clip`. Adaptor sequences will also be excluded during alignment
+> Minimal adapter content (<5%) as adapters already removed by `fastq-dump --clip`. Adaptor sequences will also be excluded during alignment
+</p>
 
 Trimming(skipped)
 ------------------
@@ -106,8 +107,10 @@ Trimming(skipped)
 - Read length is short (76 bp) — trimming would create short reads
 Since the reads have short length and adapter sequences at minimal, this step is skipped as it may introduce, shorter reads, biasness and reduced statistical power.
 
+<p align="center">
 <img src="results/post_trim_SRR.png" width="500" height="425"/>  
->Example of trimmed SRA file with reads at 26bp
+> Example of trimmed SRA file with reads at 26bp
+</p>
 
 Mapping reads using HISAT2
 ---------------------------
