@@ -50,6 +50,12 @@ bulk_rna_seq_prj/
 | Hypooxia             | 1                      | GSM3145521     | SRX4096747           | SRR7179540                                     |
 | Hypooxia             | 2                      | GSM3145522     | SRX4096748           | SRR7179541                                     |
 
+This analysis uses:
+**Homo_sapiens.GRCh38.114.gtf**
+- Genome: GRCh38
+- Annotation: Ensembl release 114 
+- Link: https://ftp.ensembl.org/pub/release-114/gtf/homo_sapiens/Homo_sapiens.GRCh38.114.chr.gtf.gz
+  
 ## Setup & Installation
 
 **Programs required:** It is recommended that the user have Anaconda installed, through which all required programs can be installed. Assuming that Anaconda is available, all the required programs can be installed using the following:
@@ -77,7 +83,7 @@ conda activate preprocess
 
 Download FASTQ files using SRA tools
 ------------------------------------
-SRA-Toolkit: `prefetch`+`fasterq-dump`
+**SRA-Toolkit:** `prefetch`+`fasterq-dump`
 - `--skip-technical`         : Skips technical reads (e.g., control reads or adapters)  
 - `--read-filter pass`       : Filters out low-quality reads; keeps only those marked "pass"  
 - `--clip`                   : Removes adapter sequences from reads  
@@ -85,30 +91,41 @@ SRA-Toolkit: `prefetch`+`fasterq-dump`
 
 Pre-alignment QC
 ----------------
-*FASTQC + MULTIQC*
+**FASTQC + MULTIQC**
 
-The raw sequence data is assessed for quality. ```
+The raw sequence data is assessed for quality. 
+<p>
 <img src="results/Multiqc_report_mean_quality_scores.png" width="500" height="500"/>
-The mean quality scores >30 (Phred score) and have high-confidence base calls
+
+> The mean quality scores >30 (Phred score) and have high-confidence base calls
+
 <img src="results/Multiqc_report_GC_content.png" width="500" height="425"/>  
-The GC content is around ideal content and library is prepared well 
+
+> The GC content is around ideal content and library is prepared well 
+
 <img src="results/Multiqc_report_adapter_content.png" width="500" height="425"/> 
-Minimal adapter content (<5%) as adapters already removed by `fastq-dump --clip`. Adaptor sequences will also be excluded during alignment
+
+> Minimal adapter content (<5%) as adapters already removed by `fastq-dump --clip`. Adaptor sequences will also be excluded during alignment
+</p>
 
 Trimming(skipped)
 ------------------
-*Trimmomatic*
+**Trimmomatic**
 
 - Mean quality scores >30 (Phred score)
 - Read length is short (76 bp) — trimming would create short reads
 Since the reads have short length and adapter sequences at minimal, this step is skipped as it may introduce, shorter reads, biasness and reduced statistical power.
 
-<img src="results/post_trim_SRR.png.png" width="500" height="425"/>  
->Example of trimmed SRA file with reads at 26bp
+<p>
+<img src="results/post_trim_SRR.png" width="500" height="425"/> 
+ 
+> Example of trimmed SRA file with reads at 26bp
+
+</p>
 
 Mapping reads using HISAT2
 ---------------------------
-*HISAT2*
+**HISAT2**
 
 Among splice-aware aligners, STAR aligner provides more accurate and sensitive mapping
 - HISAT2 is used here because it uses less memory and is significantly faster
@@ -116,13 +133,13 @@ Among splice-aware aligners, STAR aligner provides more accurate and sensitive m
 
 Sorting and Indexing BAM Files using SAMtool
 --------------------------------------------
-*SAMtool*
+**SAMtool**
 
 In order to achieve fast retrieval of alignments mapped to regions without having to process the entire set of alignments. 
 
 Checking strandedness using FeatureCounts
 -----------------------------------------
-*FeatureCounts*
+**FeatureCounts**
 
 The library was prepared using TruSeq® Stranded mRNA Library Prep Kit and therefore reads are reverse stranded. In order to confirm, featureCounts were run on one sample under different standedness condition:
 
@@ -130,22 +147,25 @@ The library was prepared using TruSeq® Stranded mRNA Library Prep Kit and there
 |----------------------|------------------------|-----------------------|
 | Unstranded           | 35,704,156             |  4,056,493            |
 | Forward-strand       | 2,546,478              |  71345                |
-| Reverse-strand       | *37,370,684*           |  1,957,456            |          
+| Reverse-strand       | **37,370,684**         |  1,957,456            |          
+
 This confirms that the read is reverse-stranded
 
 Mapping Quality using Qualimap
 -------------------------------------
-*Qualimap*
+**Qualimap**
 
 
 Read summarisation using FeatureCounts
 -------------------------------------
-*FeatureCounts*
+**FeatureCounts**
 
 - 10-20× faster than HTSeq-count
+- Lightweight and memory efficient
 - Multi-mapping handling by counting ambiguous reads fractionally
 
 ---
+## Downstream analysis
 ## Downstream analysis
 Ensemble IDs to gene symbols using BioMart
 ------------------------------------------
